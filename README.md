@@ -30,6 +30,7 @@ optional arguments:
   -I INTERFACE, --interface INTERFACE
                         the network interface to use for ping
   -H PING_HOST, --ping-host PING_HOST
+  -R, --reboot          skip health checks and immediately reboot gateway
 ```
 
 ## Options
@@ -38,6 +39,10 @@ optional arguments:
     
 **Ping Host** `--ping-host`
     Defaults to `google.com` - override if you'd like to ping an alternate host to determine internet connectivity.
+    
+    
+**Reboot** `--reboot`
+    Skip health checks and immediately reboot gateway.
 
 ## Known Issues
 Windows OS ping implementation is not supported.
