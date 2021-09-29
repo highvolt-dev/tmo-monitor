@@ -96,7 +96,6 @@ if not args.skip_bands and not reboot_requested:
 
   if not args.skip_5g_bands and args.secondary_band:
     band_5g = signal_info['cell_5G_stats_cfg'][0]['stat']['Band']
-    print(args)
     if band_5g not in args.secondary_band:
       print('Not on ' + ('one of ' if len(args.secondary_band) > 1 else '') + ', '.join(args.secondary_band) + '.' + (' Reboot requested.' if not args.skip_reboot else ''))
       reboot_requested = True
