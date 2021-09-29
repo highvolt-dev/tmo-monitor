@@ -31,6 +31,7 @@ optional arguments:
                         the network interface to use for ping
   -H PING_HOST, --ping-host PING_HOST
   -R, --reboot          skip health checks and immediately reboot gateway
+  --skip-bands          skip check for connected band
 ```
 
 ## Options
@@ -42,6 +43,9 @@ optional arguments:
     
 **Reboot:** `--reboot`
     Skip health checks and immediately reboot gateway.
+
+**Skip Bands:** `--skip-bands`
+    Skip check for connected band.
 
 ## Known Issues
 Windows OS ping implementation is not supported.

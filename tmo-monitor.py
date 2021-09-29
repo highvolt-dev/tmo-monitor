@@ -64,11 +64,12 @@ parser.add_argument('password', type=str, help='the administrative password')
 parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping')
 parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping')
 parser.add_argument('-R', '--reboot', action="store_true", help='skip health checks and immediately reboot gateway')
+parser.add_argument('--skip-bands', action="store_true", help='skip check for connected band')
 args = parser.parse_args()
 
 reboot_requested = args.reboot
 
-if not reboot_requested:
+if not args.skip_bands and not reboot_requested:
   signal_request = requests.get('http://192.168.12.1/fastmile_radio_status_web_app.cgi')
   signal_request.raise_for_status()
   signal_info = signal_request.json()
@@ -79,13 +80,13 @@ if not reboot_requested:
   else:
     print('Camping on n41. Not rebooting.')
 
-  ping_cmd = ['ping']
-  if args.interface:
-    ping_cmd.append('-I')
-    ping_cmd.append(args.interface)
-  ping_cmd.append('-c')
-  ping_cmd.append('1')
-  ping_cmd.append(args.ping_host)
+ping_cmd = ['ping']
+if args.interface:
+  ping_cmd.append('-I')
+  ping_cmd.append(args.interface)
+ping_cmd.append('-c')
+ping_cmd.append('1')
+ping_cmd.append(args.ping_host)
 
 if not reboot_requested and subprocess.call(ping_cmd) != 0:
   print('Could not ping ' + args.ping_host + '. reboot requested')
