@@ -9,7 +9,7 @@ Windows is not currently supported, but should work well with *nix OSes.
 
 ### Install dependencies
 
-`pip install -r requirements.txt`
+`pip3 install -r requirements.txt`
 
 ### Mark as executable
 
