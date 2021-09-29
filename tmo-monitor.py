@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Start by getting signal metrics
-import os
+import sys
 import requests
 import subprocess
 import hashlib
@@ -63,10 +63,22 @@ parser.add_argument('username', type=str, help='the username. should be admin')
 parser.add_argument('password', type=str, help='the administrative password')
 parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping')
 parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping')
-parser.add_argument('-R', '--reboot', action="store_true", help='skip health checks and immediately reboot gateway')
-parser.add_argument('--skip-bands', action="store_true", help='skip check for connected band')
-parser.add_argument('--skip-ping', action="store_true", help='skip check for successful ping')
+parser.add_argument('-R', '--reboot', action='store_true', help='skip health checks and immediately reboot gateway')
+parser.add_argument('-r', '--skip-reboot', action='store_true', help='skip rebooting gateway')
+parser.add_argument('--skip-bands', action='store_true', help='skip check for connected band')
+parser.add_argument('--skip-5g-bands', action='store_true', help='skip check for connected 5g band')
+parser.add_argument('--skip-ping', action='store_true', help='skip check for successful ping')
+parser.add_argument('-4', '--4g-band', type=str, action='append', dest='primary_band', default=None, choices=['B2', 'B4', 'B5', 'B12', 'B13', 'B25', 'B26', 'B41', 'B46', 'B48', 'B66', 'B71'], help='the 4g band(s) to check')
+parser.add_argument('-5', '--5g-band', type=str, action='append', dest='secondary_band', default=None, choices=['n41', 'n71'], help='the 5g band(s) to check (defaults to n41)')
 args = parser.parse_args()
+
+if args.skip_reboot and args.reboot:
+  print('Incompatible options: --reboot and --skip-reboot\n', file=sys.stderr)
+  parser.print_help(sys.stderr)
+  sys.exit(2)
+
+if args.secondary_band is None:
+  args.secondary_band = ['n41']
 
 reboot_requested = args.reboot
 
@@ -74,12 +86,22 @@ if not args.skip_bands and not reboot_requested:
   signal_request = requests.get('http://192.168.12.1/fastmile_radio_status_web_app.cgi')
   signal_request.raise_for_status()
   signal_info = signal_request.json()
-  band_5g = signal_info['cell_5G_stats_cfg'][0]['stat']['Band']
-  if band_5g != 'n41':
-    print('Not on n41. Reboot requested.')
-    reboot_requested = True
-  else:
-    print('Camping on n41. Not rebooting.')
+  if args.primary_band:
+    band_4g = signal_info['cell_LTE_stats_cfg'][0]['stat']['Band']
+    if band_4g not in args.primary_band:
+      print('Not on ' + ('one of ' if len(args.primary_band) > 1 else '') + ', '.join(args.primary_band) + '.' + (' Reboot requested.' if not args.skip_reboot else ''))
+      reboot_requested = True
+    else:
+      print('Camping on ' + band_4g + '.' + (' Not rebooting.' if not args.skip_reboot else ''))
+
+  if not args.skip_5g_bands and args.secondary_band:
+    band_5g = signal_info['cell_5G_stats_cfg'][0]['stat']['Band']
+    print(args)
+    if band_5g not in args.secondary_band:
+      print('Not on ' + ('one of ' if len(args.secondary_band) > 1 else '') + ', '.join(args.secondary_band) + '.' + (' Reboot requested.' if not args.skip_reboot else ''))
+      reboot_requested = True
+    else:
+      print('Camping on ' + band_5g + '.' + (' Not rebooting.' if not args.skip_reboot else ''))
 
 ping_cmd = ['ping']
 if args.interface:
@@ -93,7 +115,9 @@ if not args.skip_ping and not reboot_requested and subprocess.call(ping_cmd) != 
   print('Could not ping ' + args.ping_host + '. reboot requested')
   reboot_requested = True
 
-if reboot_requested:
+if args.skip_reboot:
+  print('Skipping reboot.')
+elif reboot_requested:
   print('Rebooting.')
   reboot()
 else:

@@ -30,26 +30,45 @@ optional arguments:
   -I INTERFACE, --interface INTERFACE
                         the network interface to use for ping
   -H PING_HOST, --ping-host PING_HOST
+                        the host to ping
   -R, --reboot          skip health checks and immediately reboot gateway
+  -r, --skip-reboot     skip rebooting gateway
   --skip-bands          skip check for connected band
+  --skip-5g-bands       skip check for connected 5g band
   --skip-ping           skip check for successful ping
+  -4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}, --4g-band {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}
+                        the 4g band(s) to check
+  -5 {n41,n71}, --5g-band {n41,n71}
+                        the 5g band(s) to check (defaults to n41)
 ```
 
 ## Options
-**Interface:** `--interface`
+**Interface:** `-I --interface`
     Can be used to specify the network interface used by the ping command. Useful if T-Mobile Home Internet is not your default network interface: e.g., this is running on a dual WAN router.
     
-**Ping Host:** `--ping-host`
+**Ping Host:** `-H --ping-host`
     Defaults to `google.com` - override if you'd like to ping an alternate host to determine internet connectivity.
     
-**Reboot:** `--reboot`
+**Reboot:** `-R --reboot`
     Skip health checks and immediately reboot gateway.
+
+**Skip Reboot:** `-r --skip-reboot`
+    Skip rebooting gateway.
 
 **Skip Bands:** `--skip-bands`
     Skip check for connected band.
 
+**Skip 5g Bands:** `--skip-5g-bands`
+    Skip check for connected 5g band.
+
 **Skip Ping:** `--skip-ping`
     Skip check for successful ping.
+
+**4G Band Checking:** `-4 --4g-band`
+    Specify a 4G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
+
+**5G Band Checking:** `-5 --5g-band`
+    Specify a 5G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
 
 ## Known Issues
 Windows OS ping implementation is not supported.
@@ -57,11 +76,7 @@ Windows OS ping implementation is not supported.
 ## Roadmap
 
 (Not yet implemented):
-- Specify desired band locking
-  - 4g
-  - 5g
 - Alternate connectivity checks
-- Disable reboot behavior
 - systemd service configuration
 
 ## Tip
