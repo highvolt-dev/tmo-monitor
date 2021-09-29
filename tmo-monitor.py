@@ -65,6 +65,7 @@ parser.add_argument('-I', '--interface', type=str, help='the network interface t
 parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping')
 parser.add_argument('-R', '--reboot', action="store_true", help='skip health checks and immediately reboot gateway')
 parser.add_argument('--skip-bands', action="store_true", help='skip check for connected band')
+parser.add_argument('--skip-ping', action="store_true", help='skip check for successful ping')
 args = parser.parse_args()
 
 reboot_requested = args.reboot
@@ -88,7 +89,7 @@ ping_cmd.append('-c')
 ping_cmd.append('1')
 ping_cmd.append(args.ping_host)
 
-if not reboot_requested and subprocess.call(ping_cmd) != 0:
+if not args.skip_ping and not reboot_requested and subprocess.call(ping_cmd) != 0:
   print('Could not ping ' + args.ping_host + '. reboot requested')
   reboot_requested = True
 

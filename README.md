@@ -32,6 +32,7 @@ optional arguments:
   -H PING_HOST, --ping-host PING_HOST
   -R, --reboot          skip health checks and immediately reboot gateway
   --skip-bands          skip check for connected band
+  --skip-ping           skip check for successful ping
 ```
 
 ## Options
@@ -47,6 +48,9 @@ optional arguments:
 **Skip Bands:** `--skip-bands`
     Skip check for connected band.
 
+**Skip Ping:** `--skip-ping`
+    Skip check for successful ping.
+
 ## Known Issues
 Windows OS ping implementation is not supported.
 
@@ -56,8 +60,6 @@ Windows OS ping implementation is not supported.
 - Specify desired band locking
   - 4g
   - 5g
-- Disable band locking check
-- Disable ping/connectivity check
 - Alternate connectivity checks
 - Disable reboot behavior
 - systemd service configuration
