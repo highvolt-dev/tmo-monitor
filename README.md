@@ -68,7 +68,7 @@ optional arguments:
     Specify a 4G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
 
 **5G Band Checking:** `-5 --5g-band`
-    Specify a 5G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
+    Defaults to n41 - Specify a 5G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
 
 ## Known Issues
 Windows OS ping implementation is not supported.
