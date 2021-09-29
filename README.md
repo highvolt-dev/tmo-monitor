@@ -37,11 +37,10 @@ optional arguments:
 **Interface:** `--interface`
     Can be used to specify the network interface used by the ping command. Useful if T-Mobile Home Internet is not your default network interface: e.g., this is running on a dual WAN router.
     
-**Ping Host** `--ping-host`
+**Ping Host:** `--ping-host`
     Defaults to `google.com` - override if you'd like to ping an alternate host to determine internet connectivity.
     
-    
-**Reboot** `--reboot`
+**Reboot:** `--reboot`
     Skip health checks and immediately reboot gateway.
 
 ## Known Issues
