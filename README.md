@@ -1,9 +1,7 @@
 # tmo-monitor
-A lightweight Python 3 script that can monitor the T-Mobile Home Internet Nokia 5G Gateway for band and connectivity and reboot as needed.
+A lightweight, cross-platform Python 3 script that can monitor the T-Mobile Home Internet Nokia 5G Gateway for band and connectivity and reboot as needed.
 
 Currently checks for n41 5G signal and connectivity to either google.com or a configurable host via ping.
-
-Windows is not currently supported, but should work well with *nix OSes.
 
 ## Getting Started
 
@@ -17,7 +15,7 @@ Windows is not currently supported, but should work well with *nix OSes.
 
 ## Usage
 ```
-usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] username password
+usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] [-R] [-r] [--skip-bands] [--skip-5g-bands] [--skip-ping] [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}] [-5 {n41,n71}] username password
 
 Check T-Mobile Home Internet 5g band and connectivity and reboot if necessary
 
@@ -44,7 +42,7 @@ optional arguments:
 
 ## Options
 **Interface:** `-I --interface`
-    Can be used to specify the network interface used by the ping command. Useful if T-Mobile Home Internet is not your default network interface: e.g., this is running on a dual WAN router.
+    Can be used to specify the network interface used by the ping command. Useful if T-Mobile Home Internet is not your default network interface: e.g., this is running on a dual WAN router. On Windows, pass the source IP address to use.
     
 **Ping Host:** `-H --ping-host`
     Defaults to `google.com` - override if you'd like to ping an alternate host to determine internet connectivity. Must specify a host if flag is provided - you can simply omit the flag if you'd like to use the default google.com ping check.
@@ -69,9 +67,6 @@ optional arguments:
 
 **5G Band Checking:** `-5 --5g-band`
     Defaults to n41 - Specify a 5G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
-
-## Known Issues
-Windows OS ping implementation is not supported.
 
 ## Roadmap
 

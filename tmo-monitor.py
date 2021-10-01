@@ -7,12 +7,13 @@ import hashlib
 from base64 import b64encode
 import secrets
 import argparse
+import platform
 
 def reboot():
   nonce_request = requests.get('http://192.168.12.1/login_web_app.cgi?nonce')
   nonce_request.raise_for_status()
   nonce_response = nonce_request.json()
-  
+
   s = sha256(args.username, args.password)
   r = sha256url(s, nonce_response['nonce'])
   login_request_body = {}
@@ -20,12 +21,12 @@ def reboot():
   login_request_body['RandomKeyhash'] = sha256url(nonce_response['randomKey'], nonce_response['nonce'])
   login_request_body['response'] = r
   login_request_body['nonce'] = base64url_escape(nonce_response['nonce'])
-  
+
   l = b64encode(secrets.token_bytes(16)).decode('utf-8')
   c = b64encode(secrets.token_bytes(16)).decode('utf-8')
   login_request_body['enckey'] = base64url_escape(l)
   login_request_body['enciv'] = base64url_escape(c)
-  
+
   login_request = requests.post('http://192.168.12.1/login_web_app.cgi', data=login_request_body)
   login_request.raise_for_status()
   jar = requests.cookies.RequestsCookieJar()
@@ -33,7 +34,7 @@ def reboot():
   jar.set('lsid', login_request.cookies['lsid'], domain='192.168.12.1', path='/')
   login_response = login_request.json()
   csrf_token = login_response['token']
-  
+
   reboot_request = requests.post('http://192.168.12.1/reboot_web_app.cgi', data={'csrf_token': csrf_token}, cookies=jar)
   reboot_request.raise_for_status()
 
@@ -58,10 +59,26 @@ def sha256(val1, val2):
 def sha256url(val1, val2):
   return base64url_escape(sha256(val1, val2))
 
+def ping(args):
+  is_win = platform.system() == 'Windows'
+  ping_cmd = ['ping']
+  if args.interface:
+    ping_cmd.append('-S' if is_win else '-I')
+    ping_cmd.append(args.interface)
+  ping_cmd.append('-n' if is_win else '-c')
+  ping_cmd.append('1')
+  ping_cmd.append(args.ping_host)
+  ping_exec = subprocess.run(ping_cmd, capture_output=True)
+  print(ping_exec.stdout.decode('utf-8'))
+  if is_win and 'Destination host unreachable' in str(ping_exec.stdout):
+    return False
+  else:
+    return ping_exec.returncode == 0
+
 parser = argparse.ArgumentParser(description='Check T-Mobile Home Internet 5g band and connectivity and reboot if necessary')
 parser.add_argument('username', type=str, help='the username. should be admin')
 parser.add_argument('password', type=str, help='the administrative password')
-parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping')
+parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping. pass the source IP on Windows')
 parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping')
 parser.add_argument('-R', '--reboot', action='store_true', help='skip health checks and immediately reboot gateway')
 parser.add_argument('-r', '--skip-reboot', action='store_true', help='skip rebooting gateway')
@@ -102,15 +119,8 @@ if not args.skip_bands and not reboot_requested:
     else:
       print('Camping on ' + band_5g + '.' + (' Not rebooting.' if not args.skip_reboot else ''))
 
-ping_cmd = ['ping']
-if args.interface:
-  ping_cmd.append('-I')
-  ping_cmd.append(args.interface)
-ping_cmd.append('-c')
-ping_cmd.append('1')
-ping_cmd.append(args.ping_host)
 
-if not args.skip_ping and not reboot_requested and subprocess.call(ping_cmd) != 0:
+if not args.skip_ping and not reboot_requested and not ping(args):
   print('Could not ping ' + args.ping_host + '. reboot requested')
   reboot_requested = True
 
