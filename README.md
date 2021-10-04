@@ -26,7 +26,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -I INTERFACE, --interface INTERFACE
-                        the network interface to use for ping
+                        the network interface to use for ping. pass the source IP on Windows
   -H PING_HOST, --ping-host PING_HOST
                         the host to ping (defaults to google.com)
   -R, --reboot          skip health checks and immediately reboot gateway

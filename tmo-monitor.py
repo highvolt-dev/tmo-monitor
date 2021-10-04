@@ -79,7 +79,7 @@ parser = argparse.ArgumentParser(description='Check T-Mobile Home Internet 5g ba
 parser.add_argument('username', type=str, help='the username. should be admin')
 parser.add_argument('password', type=str, help='the administrative password')
 parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping. pass the source IP on Windows')
-parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping')
+parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping (defaults to google.com)')
 parser.add_argument('-R', '--reboot', action='store_true', help='skip health checks and immediately reboot gateway')
 parser.add_argument('-r', '--skip-reboot', action='store_true', help='skip rebooting gateway')
 parser.add_argument('--skip-bands', action='store_true', help='skip check for connected band')
