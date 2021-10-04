@@ -28,7 +28,7 @@ optional arguments:
   -I INTERFACE, --interface INTERFACE
                         the network interface to use for ping
   -H PING_HOST, --ping-host PING_HOST
-                        the host to ping
+                        the host to ping (defaults to google.com)
   -R, --reboot          skip health checks and immediately reboot gateway
   -r, --skip-reboot     skip rebooting gateway
   --skip-bands          skip check for connected band
