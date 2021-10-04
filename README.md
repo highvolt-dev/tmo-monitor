@@ -15,7 +15,7 @@ Currently checks for n41 5G signal and connectivity to either google.com or a co
 
 ## Usage
 ```
-usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] [-R] [-r] [--skip-bands] [--skip-5g-bands] [--skip-ping] [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}] [-5 {n41,n71}] username password
+usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] [-R] [-r] [--skip-bands] [--skip-5g-bands] [--skip-ping] [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}] [-5 {n41,n71}] [--uptime UPTIME] username password
 
 Check T-Mobile Home Internet 5g band and connectivity and reboot if necessary
 
@@ -38,6 +38,7 @@ optional arguments:
                         the 4g band(s) to check
   -5 {n41,n71}, --5g-band {n41,n71}
                         the 5g band(s) to check (defaults to n41)
+  --uptime UPTIME       how long the gateway must be up before considering a reboot (defaults to 90 seconds)
 ```
 
 ## Options
@@ -67,6 +68,9 @@ optional arguments:
 
 **5G Band Checking:** `-5 --5g-band`
     Defaults to n41 - Specify a 5G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
+
+**Uptime Threshold:** `--uptime`
+    Defaults to n41 - Specify the required uptime for the gateway in order for an implicit reboot to occur. Defaults to 90 seconds to allow sufficient time to establish a connection and stabilize band selection. Setting is used to avoid boot looping, but is not respected when the `--reboot` flag is used.
 
 ## Roadmap
 

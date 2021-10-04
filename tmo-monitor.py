@@ -75,6 +75,11 @@ def ping(args):
   else:
     return ping_exec.returncode == 0
 
+def get_uptime():
+    uptime_req = requests.get('http://192.168.12.1/dashboard_device_info_status_web_app.cgi')
+    uptime_req.raise_for_status()
+    return uptime_req.json()['device_app_status'][0]['UpTime']
+
 parser = argparse.ArgumentParser(description='Check T-Mobile Home Internet 5g band and connectivity and reboot if necessary')
 parser.add_argument('username', type=str, help='the username. should be admin')
 parser.add_argument('password', type=str, help='the administrative password')
@@ -87,6 +92,7 @@ parser.add_argument('--skip-5g-bands', action='store_true', help='skip check for
 parser.add_argument('--skip-ping', action='store_true', help='skip check for successful ping')
 parser.add_argument('-4', '--4g-band', type=str, action='append', dest='primary_band', default=None, choices=['B2', 'B4', 'B5', 'B12', 'B13', 'B25', 'B26', 'B41', 'B46', 'B48', 'B66', 'B71'], help='the 4g band(s) to check')
 parser.add_argument('-5', '--5g-band', type=str, action='append', dest='secondary_band', default=None, choices=['n41', 'n71'], help='the 5g band(s) to check (defaults to n41)')
+parser.add_argument('--uptime', type=int, default=90, help='how long the gateway must be up before considering a reboot (defaults to 90 seconds)')
 args = parser.parse_args()
 
 if args.skip_reboot and args.reboot:
@@ -127,7 +133,11 @@ if not args.skip_ping and not reboot_requested and not ping(args):
 if args.skip_reboot:
   print('Skipping reboot.')
 elif reboot_requested:
-  print('Rebooting.')
-  reboot()
+  uptime_met = args.reboot or get_uptime() >= args.uptime
+  if uptime_met:
+    print('Rebooting.')
+    reboot()
+  else:
+    print('Uptime threshold not met for reboot.')
 else:
   print('No reboot necessary.')
