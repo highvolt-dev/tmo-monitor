@@ -15,7 +15,7 @@ Currently checks for n41 5G signal and connectivity to either google.com or a co
 
 ## Usage
 ```
-usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] [-R] [-r] [--skip-bands] [--skip-5g-bands] [--skip-ping] [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}] [-5 {n41,n71}] [--uptime UPTIME] username password
+usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] [-R] [-r] [--skip-bands] [--skip-5g-bands] [--skip-ping] [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}] [-5 {n41,n71}] [--uptime UPTIME] [--enbid ENBID] username password
 
 Check T-Mobile Home Internet 5g band and connectivity and reboot if necessary
 
@@ -39,6 +39,7 @@ optional arguments:
   -5 {n41,n71}, --5g-band {n41,n71}
                         the 5g band(s) to check (defaults to n41)
   --uptime UPTIME       how long the gateway must be up before considering a reboot (defaults to 90 seconds)
+  --enbid ENBID         check for a connection to a given eNB ID
 ```
 
 ## Options
@@ -71,6 +72,9 @@ optional arguments:
 
 **Uptime Threshold:** `--uptime`
     Defaults to n41 - Specify the required uptime for the gateway in order for an implicit reboot to occur. Defaults to 90 seconds to allow sufficient time to establish a connection and stabilize band selection. Setting is used to avoid boot looping, but is not respected when the `--reboot` flag is used.
+
+**eNB ID:** `--enbid`
+    Specify the desired cell site you expect the gateway to be connected to. Expects a numeric eNB ID to be provided. [cellmapper.net](https://www.cellmapper.net) is a helpful resource for finding eNB ID values for nearby cell sites.
 
 ## Roadmap
 

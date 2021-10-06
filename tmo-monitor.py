@@ -76,9 +76,26 @@ def ping(args):
     return ping_exec.returncode == 0
 
 def get_uptime():
-    uptime_req = requests.get('http://192.168.12.1/dashboard_device_info_status_web_app.cgi')
-    uptime_req.raise_for_status()
-    return uptime_req.json()['device_app_status'][0]['UpTime']
+  uptime_req = requests.get('http://192.168.12.1/dashboard_device_info_status_web_app.cgi')
+  uptime_req.raise_for_status()
+  return uptime_req.json()['device_app_status'][0]['UpTime']
+
+def get_site_info(username, password):
+  login_request = requests.post('http://192.168.12.1/login_app.cgi', data={'name': username, 'pswd': password})
+  login_request.raise_for_status()
+
+  jar = requests.cookies.RequestsCookieJar()
+  jar.set('sid', login_request.cookies['sid'], domain='192.168.12.1', path='/')
+  jar.set('lsid', login_request.cookies['lsid'], domain='192.168.12.1', path='/')
+
+  stat_request = requests.get('http://192.168.12.1/cell_status_app.cgi', cookies=jar)
+  stat_request.raise_for_status()
+  meta = stat_request.json()['cell_stat_lte'][0]
+
+  return {
+    'eNBID': int(meta['eNBID']),
+    'PLMN': meta['MCC'] + '-' + meta['MNC']
+  }
 
 parser = argparse.ArgumentParser(description='Check T-Mobile Home Internet 5g band and connectivity and reboot if necessary')
 parser.add_argument('username', type=str, help='the username. should be admin')
@@ -93,6 +110,7 @@ parser.add_argument('--skip-ping', action='store_true', help='skip check for suc
 parser.add_argument('-4', '--4g-band', type=str, action='append', dest='primary_band', default=None, choices=['B2', 'B4', 'B5', 'B12', 'B13', 'B25', 'B26', 'B41', 'B46', 'B48', 'B66', 'B71'], help='the 4g band(s) to check')
 parser.add_argument('-5', '--5g-band', type=str, action='append', dest='secondary_band', default=None, choices=['n41', 'n71'], help='the 5g band(s) to check (defaults to n41)')
 parser.add_argument('--uptime', type=int, default=90, help='how long the gateway must be up before considering a reboot (defaults to 90 seconds)')
+parser.add_argument('--enbid', type=int, default=None, help='check for a connection to a given eNB ID')
 args = parser.parse_args()
 
 if args.skip_reboot and args.reboot:
@@ -104,6 +122,14 @@ if args.secondary_band is None:
   args.secondary_band = ['n41']
 
 reboot_requested = args.reboot
+
+if args.enbid and not reboot_requested:
+  site_meta = get_site_info(args.username, args.password)
+  if site_meta['eNBID'] != args.enbid:
+    print('Not on eNB ID ' + str(args.enbid) + '. Reboot requested.')
+    reboot_requested = True
+  else:
+    print('eNB ID check passed.')
 
 if not args.skip_bands and not reboot_requested:
   signal_request = requests.get('http://192.168.12.1/fastmile_radio_status_web_app.cgi')
