@@ -70,7 +70,7 @@ optional arguments:
     Defaults to n41 - Specify a 5G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
 
 **Uptime Threshold:** `--uptime`
-    Defaults to n41 - Specify the required uptime for the gateway in order for an implicit reboot to occur. Defaults to 90 seconds to allow sufficient time to establish a connection and stabilize band selection. Setting is used to avoid boot looping, but is not respected when the `--reboot` flag is used.
+    Defaults to 90 seconds - Specify a required uptime for an implicit reboot to occur. Intended to allow sufficient time to establish a connection and stabilize band selection. Setting is used to avoid boot looping, but is not respected when the `--reboot` flag is used.
 
 ## Roadmap
 
