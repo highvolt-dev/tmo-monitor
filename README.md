@@ -1,7 +1,7 @@
 # tmo-monitor
-A lightweight, cross-platform Python 3 script that can monitor the T-Mobile Home Internet Nokia 5G Gateway for band and connectivity and reboot as needed.
+A lightweight, cross-platform Python 3 script that can monitor the T-Mobile Home Internet Nokia 5G Gateway for 4G/5G bands, cellular site (tower), and internet connectivity and reboots as needed or on-demand.
 
-Currently checks for n41 5G signal and connectivity to either google.com or a configurable host via ping.
+By default, checks for n41 5G signal and connectivity to google.com via ping.
 
 ## Getting Started
 
