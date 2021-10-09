@@ -15,18 +15,24 @@ By default, checks for n41 5G signal and connectivity to google.com via ping.
 
 ## Usage
 ```
-usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] [-R] [-r] [--skip-bands] [--skip-5g-bands] [--skip-ping] [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}] [-5 {n41,n71}] [--uptime UPTIME] [--enbid ENBID] username password
+usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] [-R] [-r]
+                      [--skip-bands] [--skip-5g-bands] [--skip-ping]
+                      [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}]
+                      [-5 {n41,n71}] [--uptime UPTIME] [--enbid ENBID]
+                      username [password]
 
-Check T-Mobile Home Internet 5g band and connectivity and reboot if necessary
+Check T-Mobile Home Internet cellular band(s) and connectivity and reboot if necessary
 
 positional arguments:
-  username              the username. should be admin
-  password              the administrative password
+  username              the username (most likely "admin")
+  password              the administrative password (will be requested at
+                        runtime if not passed as argument)
 
 optional arguments:
   -h, --help            show this help message and exit
   -I INTERFACE, --interface INTERFACE
-                        the network interface to use for ping. pass the source IP on Windows
+                        the network interface to use for ping. pass the source
+                        IP on Windows
   -H PING_HOST, --ping-host PING_HOST
                         the host to ping (defaults to google.com)
   -R, --reboot          skip health checks and immediately reboot gateway
@@ -38,7 +44,8 @@ optional arguments:
                         the 4g band(s) to check
   -5 {n41,n71}, --5g-band {n41,n71}
                         the 5g band(s) to check (defaults to n41)
-  --uptime UPTIME       how long the gateway must be up before considering a reboot (defaults to 90 seconds)
+  --uptime UPTIME       how long the gateway must be up before considering a
+                        reboot (defaults to 90 seconds)
   --enbid ENBID         check for a connection to a given eNB ID
 ```
 
