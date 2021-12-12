@@ -9,6 +9,7 @@ import secrets
 import argparse
 import platform
 import getpass
+import time
 
 class TrashCanController:
   def __init__(self, username, password):
@@ -79,7 +80,7 @@ class TrashCanController:
     uptime_req = requests.get('http://192.168.12.1/dashboard_device_info_status_web_app.cgi')
     uptime_req.raise_for_status()
     return uptime_req.json()['device_app_status'][0]['UpTime']
-  
+
   def get_signal_info(self):
     signal_request = requests.get('http://192.168.12.1/fastmile_radio_status_web_app.cgi')
     signal_request.raise_for_status()
@@ -87,7 +88,7 @@ class TrashCanController:
 
 
   # functions that don't touch the API
-  def ping(self, ping_host, interface = None):
+  def ping(self, ping_host, ping_count, ping_interval, interface = None):
     is_win = platform.system() == 'Windows'
     ping_cmd = ['ping']
     if interface:
@@ -96,13 +97,19 @@ class TrashCanController:
     ping_cmd.append('-n' if is_win else '-c')
     ping_cmd.append('1')
     ping_cmd.append(ping_host)
-    ping_exec = subprocess.run(ping_cmd, capture_output=True)
-    print(ping_exec.stdout.decode('utf-8'))
-    if is_win and 'Destination host unreachable' in str(ping_exec.stdout):
-      return False
-    else:
-      return ping_exec.returncode == 0
 
+
+    def is_ping_success(ping_index):
+      if ping_index > 0:
+        time.sleep(ping_interval)
+      ping_exec = subprocess.run(ping_cmd, capture_output=True)
+      print(ping_exec.stdout.decode('utf-8'))
+      if is_win and 'Destination host unreachable' in str(ping_exec.stdout):
+        return False
+      else:
+        return ping_exec.returncode == 0
+
+    return any(is_ping_success(i) for i in range(ping_count))
 
   # helper functions - maybe move these into their own class and import it later?
   def base64url_escape(self, b64):
@@ -133,6 +140,8 @@ if __name__ == "__main__":
   parser.add_argument('password', type=str, help='the administrative password (will be requested at runtime if not passed as argument)', nargs='?')
   parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping. pass the source IP on Windows')
   parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping (defaults to google.com)')
+  parser.add_argument('--ping-count', type=int, default='1', help='how many ping health checks to perform')
+  parser.add_argument('--ping-interval', type=int, default='10', help='how long in seconds to wait between ping health checks')
   parser.add_argument('-R', '--reboot', action='store_true', help='skip health checks and immediately reboot gateway')
   parser.add_argument('-r', '--skip-reboot', action='store_true', help='skip rebooting gateway')
   parser.add_argument('--skip-bands', action='store_true', help='skip check for connected band')
@@ -187,7 +196,7 @@ if __name__ == "__main__":
         print('Camping on ' + band_5g + '.' + (' Not rebooting.' if not args.skip_reboot else ''))
 
 
-  if not args.skip_ping and not reboot_requested and not tc_control.ping(args.ping_host, args.interface):
+  if not args.skip_ping and not reboot_requested and not tc_control.ping(args.ping_host, args.ping_count, args.ping_interval, args.interface):
     print('Could not ping ' + args.ping_host + '.' + (' Reboot requested.' if not args.skip_reboot else ''))
     reboot_requested = True
 

@@ -35,6 +35,10 @@ optional arguments:
                         IP on Windows
   -H PING_HOST, --ping-host PING_HOST
                         the host to ping (defaults to google.com)
+  --ping-count
+                        how many ping health checks to perform (defaults to 1)
+  --ping-interval
+                        how long in seconds to wait between ping health checks (defaults to 10)
   -R, --reboot          skip health checks and immediately reboot gateway
   -r, --skip-reboot     skip rebooting gateway
   --skip-bands          skip check for connected band
@@ -52,10 +56,16 @@ optional arguments:
 ## Options
 **Interface:** `-I --interface`
     Can be used to specify the network interface used by the ping command. Useful if T-Mobile Home Internet is not your default network interface: e.g., this is running on a dual WAN router. On Windows, pass the source IP address to use.
-    
+
 **Ping Host:** `-H --ping-host`
     Defaults to `google.com` - override if you'd like to ping an alternate host to determine internet connectivity. Must specify a host if flag is provided - you can simply omit the flag if you'd like to use the default google.com ping check.
-    
+
+**Ping Count:** `--ping-count`
+    Defaults to `1` - override if you'd like to perform multiple ping checks before rebooting.
+
+**Ping Interval:** `--ping-interval`
+    Defaults to `10` seconds - override if you'd like to use a different interval.
+
 **Reboot:** `-R --reboot`
     Skip health checks and immediately reboot gateway.
 
