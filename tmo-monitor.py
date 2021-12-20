@@ -25,7 +25,11 @@ class TrashCanController:
 
   # functions using authenticated app API endpoints
   def login_app(self):
-    login_request = requests.post('http://192.168.12.1/login_app.cgi', data={'name': self.username, 'pswd': self.password})
+    try:
+      login_request = requests.post('http://192.168.12.1/login_app.cgi', data={'name': self.username, 'pswd': self.password})
+    except:
+      print("Could not post login request, exiting.")
+      sys.exit(2)
     login_request.raise_for_status()
 
     self.app_jar = requests.cookies.RequestsCookieJar()
@@ -38,7 +42,7 @@ class TrashCanController:
         self.login_app()
       stat_request = requests.get('http://192.168.12.1/cell_status_app.cgi', cookies=self.app_jar)
     except:
-      print ("Could not query site info, exiting.")
+      print("Could not query site info, exiting.")
       sys.exit(2)
 
     stat_request.raise_for_status()
@@ -54,7 +58,7 @@ class TrashCanController:
     try:
       nonce_request = requests.get('http://192.168.12.1/login_web_app.cgi?nonce')
     except:
-      print ("Could not query nonce, exiting.")
+      print("Could not query nonce, exiting.")
       sys.exit(2)
 
     nonce_request.raise_for_status()
@@ -72,7 +76,11 @@ class TrashCanController:
       'enciv': self.base64url_escape(b64encode(secrets.token_bytes(16)).decode('utf-8'))
     }
 
-    login_request = requests.post('http://192.168.12.1/login_web_app.cgi', data=login_request_body)
+    try:
+      login_request = requests.post('http://192.168.12.1/login_web_app.cgi', data=login_request_body)
+    except:
+      print("Could not post login request, exiting.")
+      sys.exit(2)
     login_request.raise_for_status()
     self.web_jar = requests.cookies.RequestsCookieJar()
     self.web_jar.set('sid', login_request.cookies['sid'], domain='192.168.12.1', path='/')
@@ -81,9 +89,13 @@ class TrashCanController:
     self.csrf_token = login_response['token']
 
   def reboot(self):
-    if not (self.csrf_token or self.web_jar):
-      self.login_web()
-    reboot_request = requests.post('http://192.168.12.1/reboot_web_app.cgi', data={'csrf_token': self.csrf_token}, cookies=self.web_jar)
+    try:
+      if not (self.csrf_token or self.web_jar):
+        self.login_web()
+      reboot_request = requests.post('http://192.168.12.1/reboot_web_app.cgi', data={'csrf_token': self.csrf_token}, cookies=self.web_jar)
+    except:
+      print("Could not post reboot request, exiting.")
+      sys.exit(2)
     reboot_request.raise_for_status()
 
   # functions using unauthenticated API endpoints
@@ -91,7 +103,7 @@ class TrashCanController:
     try:
       uptime_req = requests.get('http://192.168.12.1/dashboard_device_info_status_web_app.cgi')
     except:
-      print ("Could not query modem uptime, exiting.")
+      print("Could not query modem uptime, exiting.")
       sys.exit(2)
     uptime_req.raise_for_status()
     return uptime_req.json()['device_app_status'][0]['UpTime']
@@ -100,7 +112,7 @@ class TrashCanController:
     try:
       signal_request = requests.get('http://192.168.12.1/fastmile_radio_status_web_app.cgi')
     except:
-      print ("Could not query signal status, exiting.")
+      print("Could not query signal status, exiting.")
       sys.exit(2)
     signal_request.raise_for_status()
     return signal_request.json()
@@ -212,7 +224,10 @@ class Configuration:
           self.reboot[var] = False
     tmp = os.environ.get('tmo_skip_reboot')
     if tmp != None:
-      self.skip_reboot = tmp
+      if tmp.lower() == 'true':
+        self.reboot[var] = True
+      else:
+        self.reboot[var] = False
     tmp = os.environ.get('tmo_print_config')
     if tmp != None:
         if tmp.lower() == 'true':
@@ -231,7 +246,7 @@ class Configuration:
     self.parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping (defaults to google.com)')
     self.parser.add_argument('--ping-count', type=int, default='1', help='how many ping health checks to perform')
     self.parser.add_argument('--ping-interval', type=int, default='10', help='how long in seconds to wait between ping health checks')
-    #reboot settings
+    # reboot settings
     self.parser.add_argument('-R', '--reboot', action='store_true', help='skip health checks and immediately reboot gateway')
     self.parser.add_argument('-r', '--skip-reboot', action='store_true', help='skip rebooting gateway')
     self.parser.add_argument('--skip-bands', action='store_true', help='skip check for connected band')
@@ -239,7 +254,7 @@ class Configuration:
     self.parser.add_argument('--skip-ping', action='store_true', help='skip check for successful ping')
     self.parser.add_argument('--skip-enbid', action='store_true', help='skip check for connected eNB ID')
     self.parser.add_argument('--uptime', type=int, default=90, help='how long the gateway must be up before considering a reboot (defaults to 90 seconds)')
-    #connection configuration
+    # connection configuration
     self.parser.add_argument('-4', '--4g-band', type=str, action='append', dest='primary_band', default=None, choices=['B2', 'B4', 'B5', 'B12', 'B13', 'B25', 'B26', 'B41', 'B46', 'B48', 'B66', 'B71'], help='the 4g band(s) to check')
     self.parser.add_argument('-5', '--5g-band', type=str, action='append', dest='secondary_band', default=None, choices=['n41', 'n71'], help='the 5g band(s) to check (defaults to n41)')
     self.parser.add_argument('--enbid', type=int, default=None, help='check for a connection to a given eNB ID')
@@ -276,10 +291,11 @@ class Configuration:
       self.reboot_now = True
 
   def print_config(self):
-    print("Checking trashcan health:")
-    # print("  Login info:")
-    # print("    Username: " + self.login.get('username') if self.login.get('username') else '')
-    # print("    Password: " + self.login.get('password') if self.login.get('password') else '')
+    print("Script configuration:")
+    if sys.stdin and sys.stdin.isatty():
+      print("  Login info:")
+      print("    Username: " + self.login.get('username') if self.login.get('username') else '')
+      print("    Password: " + self.login.get('password') if self.login.get('password') else '')
     print("  Ping configuration:")
     (print("    Interface: " + self.ping.get('interface')) if self.ping.get('interface') else '')
     (print("    Host: " + self.ping.get('ping_host')) if self.ping.get('ping_host') else '')
@@ -356,8 +372,8 @@ if __name__ == "__main__":
     if config.skip_reboot:      
       print('Not rebooting.')
     else:
-      print ('Reboot requested.')
-      if tc_control.get_uptime() >= config.reboot['uptime']:
+      print('Reboot requested.')
+      if config.reboot_now or (tc_control.get_uptime() >= config.reboot['uptime']):
         print('Rebooting.')
         tc_control.reboot()
       else:

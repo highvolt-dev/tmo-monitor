@@ -14,6 +14,8 @@ By default, checks for n41 5G signal and connectivity to google.com via ping.
 `chmod +x ./tmo-monitor.py`
 
 ## Usage
+
+### Command line usage
 ```
 usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] [-R] [-r]
                       [--skip-bands] [--skip-5g-bands] [--skip-ping]
@@ -92,6 +94,38 @@ optional arguments:
 
 **eNB ID:** `--enbid`
     Specify the desired cell site you expect the gateway to be connected to. Expects a numeric eNB ID to be provided. [cellmapper.net](https://www.cellmapper.net) is a helpful resource for finding eNB ID values for nearby cell sites.
+
+### Default settings
+- Username == admin
+- Password -> interactive prompt
+- 5G band == n41
+- Reboot on failure to ping google.com
+
+### Environment (`.env`) options
+
+The script is normally run in batch mode, such as scheduled through a `cron` job. Interactive command-line options are meant to be used as overrides to defaults or environment settings.
+
+A common usage pattern would be to configure the script using a `.env` file to reboot on 5G band and wifi check. When messing with the settings, a user might want to specify `--skip-reboot`. When a user knows that the reboot is needed they might specify `--reboot` for an immediate reboot.
+
+- Default settings have the lowest precendence. 
+- Environment settings--whether in the shell environment or a `.env` file--override the defaults
+- Command line options have the highest precedence and override both default settings and environment settings
+
+
+Environment settings are meant to be declarative. They fall into four categories:
+
+- Login settings (username, password)
+- Configuration settings
+    - Ping settings (target host/interface, number of pings, interval)
+    - Connection settings (preferred band, eNB ID, etc.)
+- Reboot settings: request reboot on any number of failed checks.
+    - Skip reboot overrides all reboot requests
+    - Reboot interval overrides all reboot requests
+    - There is no "reboot immediately" option
+- General settings: _(not yet implemented)_
+    - Default output/silent mode
+    - Logging settings 
+
 
 ## Roadmap
 
