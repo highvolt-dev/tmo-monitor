@@ -14,6 +14,8 @@ import logging
 import os
 from dotenv import load_dotenv, find_dotenv
 import re
+import tailer
+from parse import *
 
 class TrashCanController:
   def __init__(self, username, password):
@@ -188,7 +190,7 @@ class Configuration:
     self.ping = dict([('interface', ''), ('ping_host', 'google.com'), ('ping_count', 1), ('ping_interval', 10)])
     self.connection = dict([('primary_band', ''), ('secondary_band', 'n41'), ('enbid', ''), ('uptime', '')])
     self.reboot = dict([('uptime', 90), ('ping', False), ('4G_band', False), ('5G_band', False), ('enbid', False)])
-    self.general = dict([('print_config', False), ('logfile', '')])
+    self.general = dict([('print_config', False), ('logfile', ''), ('log_all', False), ('log_delta', False)])
   
     # Command line arguments override defaults & .env file
     self.read_environment()
@@ -245,23 +247,16 @@ class Configuration:
         self.reboot[var] = True
       else:
         self.reboot[var] = False
-    tmp = os.environ.get('tmo_print_config')
-    if tmp != None:
-        if tmp.lower() == 'true':
-          self.general['print_config'] = True
-        else:
-          self.general['print_config'] = False
     tmp = os.environ.get('tmo_logfile')
     if tmp != None:
         self.general['logfile'] = tmp
-    tmp = os.environ.get('tmo_log_all')
-    if tmp != None:
-        if tmp.lower() == 'true':
-          self.general['log_all'] = True
-        else:
-          self.general['log_all'] = False
-
-     
+    for var in {'print_config', 'log_all', 'log_delta'}:
+      tmp = os.environ.get('tmo_' + var)    
+      if tmp != None:
+          if tmp.lower() == 'true':
+            self.general[var] = True
+          else:
+            self.general[var] = False
     
   def parse_commandline(self):
     self.parser = argparse.ArgumentParser(description='Check T-Mobile Home Internet cellular band(s) and connectivity and reboot if necessary')
@@ -285,6 +280,8 @@ class Configuration:
     self.parser.add_argument('-4', '--4g-band', type=str, action='append', dest='primary_band', default=None, choices=['B2', 'B4', 'B5', 'B12', 'B13', 'B25', 'B26', 'B41', 'B46', 'B48', 'B66', 'B71'], help='the 4g band(s) to check')
     self.parser.add_argument('-5', '--5g-band', type=str, action='append', dest='secondary_band', default=None, choices=['n41', 'n71'], help='the 5g band(s) to check (defaults to n41)')
     self.parser.add_argument('--enbid', type=int, default=None, help='check for a connection to a given eNB ID')
+    # general configuration
+    self.parser.add_argument('--log-all', action='store_true', help='write connection details to logfile')
     return self.parser.parse_args()
 
   def parse_arguments(self, args):
@@ -300,9 +297,11 @@ class Configuration:
       tmp = getattr(args, var)
       if tmp != None:
         self.connection[var] = tmp
+    if args.log_all == True:
+      self.general['log_all'] = True
+
     if args.uptime != None:
-      self.reboot['uptime'] = args.uptime
-    
+      self.reboot['uptime'] = args.uptime    
     if args.skip_ping == True:
       self.reboot['ping'] = False
     if self.connection['primary_band'] == '' or args.skip_bands == True:
@@ -338,6 +337,10 @@ class Configuration:
     (print("    Min uptime: " + str(self.reboot.get('uptime'))) if self.reboot.get('uptime') else '')
     print("  Reboot on: " + ("ping " if self.reboot['ping'] else '') + ("4G_band " if self.reboot['4G_band'] else '')
       + ("5G_band " if self.reboot['5G_band'] else '') + ("eNB_ID" if self.reboot['enbid'] else ''))
+    print("  General settings:")
+    print("    Log file: " + str(self.general['logfile']))
+    print("    Log all: " + str(self.general['log_all']))
+    print("    Log delta: " + str(self.general['log_delta']))
     print('')
 
 # __main__
@@ -357,7 +360,7 @@ if __name__ == "__main__":
     reboot_requested = False
 
   log_all = False  
-  if config.general['log_all']:
+  if config.general['log_all'] or config.general['log_delta']:
     log_all = True
     connection = dict([('4G', ''), ('5G', ''), ('enbid', ''), ('ping', '')])
 
@@ -443,9 +446,42 @@ if __name__ == "__main__":
   else:
     print('No reboot necessary.')
   
-  if log_all:
-    msg = "4G: {0} |  5G: {1} | eNB ID: {2} | Avg Ping: {3} ms | Uptime: {4} sec".format(
-      connection['4G'], connection['5G'], connection['enbid'], connection['ping'], connection['uptime'])
-    print(msg)
-    logging.info(msg)
+  if log_all and config.general['log_delta'] and config.general['logfile']:
+    logline = tailer.tail(open(config.general['logfile']), 1)
+    for line in logline:
+        if line.__contains__('|'):
+          data = parse("{0} [INFO] 4G: {1} |  5G: {2} | eNB ID: {3} | Avg Ping: {4} ms | Uptime: {5} sec", line)
+          if data[1] != connection['4G']:
+            msg = "4G connection is {0}, was {1}".format(connection['4G'], data[1])
+            print(msg)
+            logging.info(msg)
+            config.general['log_all'] = True
+          if data[2] != connection['5G']:
+            msg = "5G connection is {0}, was {1}".format(connection['5G'], data[2])
+            print(msg)
+            logging.info(msg)
+            config.general['log_all'] = True
+          if int(data[3]) != connection['enbid']:
+            msg = "eNB ID is {0}, was {1}".format(connection['enbid'], data[3])
+            print(msg)
+            logging.info(msg)
+            config.general['log_all'] = True
+          if int(data[4]) * 3 < connection['ping']:
+            msg = "Ping ms {0}, over 3x {1} ms".format(connection['ping'], data[4])
+            print(msg)
+            logging.info(msg)
+            config.general['log_all'] = True
+          if int(data[5]) > connection['uptime']:
+            msg = "Uptime {0} sec, less than {1} sec".format(connection['uptime'], data[5])
+            print(msg)
+            logging.info(msg)
+            config.general['log_all'] = True
 
+  if log_all and config.general['log_all']:
+    if config.general['logfile'] == '':
+      logging.error("Logging requested but file not specified")
+    else:
+      msg = "4G: {0} |  5G: {1} | eNB ID: {2} | Avg Ping: {3} ms | Uptime: {4} sec".format(
+        connection['4G'], connection['5G'], connection['enbid'], connection['ping'], connection['uptime'])
+      print(msg)
+      logging.info(msg)
