@@ -265,8 +265,8 @@ class Configuration:
     # ping configuration 
     self.parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping. pass the source IP on Windows')
     self.parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping (defaults to google.com)')
-    self.parser.add_argument('--ping-count', type=int, default=1, help='how many ping health checks to perform')
-    self.parser.add_argument('--ping-interval', type=int, default=10, help='how long in seconds to wait between ping health checks')
+    self.parser.add_argument('--ping-count', type=int, default=1, help='how many ping health checks to perform (defaults to 1)')
+    self.parser.add_argument('--ping-interval', type=int, default=10, help='how long in seconds to wait between ping health checks (defaults to 10)')
     # reboot settings
     self.parser.add_argument('-R', '--reboot', action='store_true', help='skip health checks and immediately reboot gateway')
     self.parser.add_argument('-r', '--skip-reboot', action='store_true', help='skip rebooting gateway')
