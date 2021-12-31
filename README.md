@@ -17,13 +17,18 @@ By default, checks for n41 5G signal and connectivity to google.com via ping.
 
 ### Command line usage
 ```
-usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST] [-R] [-r]
-                      [--skip-bands] [--skip-5g-bands] [--skip-ping]
+usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST]
+                      [--ping-count PING_COUNT]
+                      [--ping-interval PING_INTERVAL] [-R] [-r] [--skip-bands]
+                      [--skip-5g-bands] [--skip-ping] [--skip-enbid]
+                      [--uptime UPTIME]
                       [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}]
-                      [-5 {n41,n71}] [--uptime UPTIME] [--enbid ENBID]
-                      username [password]
+                      [-5 {n41,n71}] [--enbid ENBID] [--logfile LOGFILE]
+                      [--log-all] [--log-delta]
+                      [username] [password]
 
-Check T-Mobile Home Internet cellular band(s) and connectivity and reboot if necessary
+Check T-Mobile Home Internet cellular band(s) and connectivity and reboot if
+necessary
 
 positional arguments:
   username              the username (most likely "admin")
@@ -33,29 +38,35 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -I INTERFACE, --interface INTERFACE
-                        the network interface to use for ping. pass the source
-                        IP on Windows
+                        the network interface to use for ping. pass the source IP on Windows
   -H PING_HOST, --ping-host PING_HOST
                         the host to ping (defaults to google.com)
-  --ping-count
-                        how many ping health checks to perform (defaults to 1)
-  --ping-interval
-                        how long in seconds to wait between ping health checks (defaults to 10)
+  --ping-count PING_COUNT
+                        how many ping health checks to perform
+  --ping-interval PING_INTERVAL
+                        how long in seconds to wait between ping health checks
   -R, --reboot          skip health checks and immediately reboot gateway
   -r, --skip-reboot     skip rebooting gateway
   --skip-bands          skip check for connected band
   --skip-5g-bands       skip check for connected 5g band
   --skip-ping           skip check for successful ping
+  --skip-enbid          skip check for connected eNB ID
+  --uptime UPTIME       how long the gateway must be up before considering a
+                        reboot (defaults to 90 seconds)
   -4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}, --4g-band {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}
                         the 4g band(s) to check
   -5 {n41,n71}, --5g-band {n41,n71}
                         the 5g band(s) to check (defaults to n41)
-  --uptime UPTIME       how long the gateway must be up before considering a
-                        reboot (defaults to 90 seconds)
   --enbid ENBID         check for a connection to a given eNB ID
+  --print-config        output configuration settings
+  --logfile LOGFILE     output file for logging
+  --log-all             always write connection details to logfile
+  --log-delta           write connection details to logfile on change
 ```
 
 ## Options
+
+### Ping options
 **Interface:** `-I --interface`
     Can be used to specify the network interface used by the ping command. Useful if T-Mobile Home Internet is not your default network interface: e.g., this is running on a dual WAN router. On Windows, pass the source IP address to use.
 
@@ -68,6 +79,7 @@ optional arguments:
 **Ping Interval:** `--ping-interval`
     Defaults to `10` seconds - override if you'd like to use a different interval.
 
+### Reboot options
 **Reboot:** `-R --reboot`
     Skip health checks and immediately reboot gateway.
 
@@ -83,17 +95,27 @@ optional arguments:
 **Skip Ping:** `--skip-ping`
     Skip check for successful ping.
 
+**Uptime Threshold:** `--uptime`
+    Defaults to 90 seconds - Specify a required uptime for an implicit reboot to occur. Intended to allow sufficient time to establish a connection and stabilize band selection. Setting is used to avoid boot looping, but is not respected when the `--reboot` flag is used.
+
+### Connection configuration
 **4G Band Checking:** `-4 --4g-band`
     Specify a 4G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
 
 **5G Band Checking:** `-5 --5g-band`
     Defaults to n41 - Specify a 5G band you expect the gateway to be connected to. Repeat the flag to allow multiple acceptable bands. Case-sensitive.
 
-**Uptime Threshold:** `--uptime`
-    Defaults to 90 seconds - Specify a required uptime for an implicit reboot to occur. Intended to allow sufficient time to establish a connection and stabilize band selection. Setting is used to avoid boot looping, but is not respected when the `--reboot` flag is used.
-
 **eNB ID:** `--enbid`
     Specify the desired cell site you expect the gateway to be connected to. Expects a numeric eNB ID to be provided. [cellmapper.net](https://www.cellmapper.net) is a helpful resource for finding eNB ID values for nearby cell sites.
+
+### General settings
+
+**Logfile** `--logfile LOGFILE`     
+    Output file for logging. Defaults to `tmo-monitor.log`
+**Log all** `--log-all`
+    Always write connection details to logfile. Checks all configuration settings. 
+**Log delta** `--log-delta`
+    Write connection details to logfile on change of any configuration setting or long ping time.
 
 ### Default settings
 - Username == admin
@@ -122,8 +144,8 @@ Environment settings are meant to be declarative. They fall into four categories
     - Skip reboot overrides all reboot requests
     - Reboot interval overrides all reboot requests
     - There is no "reboot immediately" option
-- General settings: _(not yet implemented)_
-    - Default output/silent mode
+- General settings: 
+    - Default output/silent mode _(not yet implemented)_
     - Logging settings 
 
 

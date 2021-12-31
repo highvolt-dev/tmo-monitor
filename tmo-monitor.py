@@ -17,6 +17,13 @@ import re
 import tailer
 from parse import *
 
+def print_and_log(msg, level='INFO'):
+  print(msg)
+  lvl = logging.getLevelName(level)
+  if type(lvl) != int:
+    lvl = 20 # Set to INFO as default, Python bug between 3.4 to 3.42
+  logging.log(lvl, msg)
+
 class TrashCanController:
   def __init__(self, username, password):
     self.username = username
@@ -138,6 +145,8 @@ class TrashCanController:
       print(ping_exec.stdout.decode('utf-8'))
       if ping_exec.returncode != 0:
         return -1
+      if is_win and 'Destination host unreachable' in str(ping_exec.stdout):
+        return -1
       pattern = b'[rtt|round-trip] min/avg/max/mdev = \d+.\d+/(\d+.\d+)/\d+.\d+/\d+.\d+ ms'
       if is_win:
         pattern = b'Minimum = \d+ms, Maximum = \d+ms, Average = (\d+)ms'
@@ -149,14 +158,6 @@ class TrashCanController:
       if result > 0:
         return result
     return -1
-
-    #   if is_win and 'Destination host unreachable' in str(ping_exec.stdout):
-    #     return False
-    #   else:
-    #     return ping_exec.returncode == 0
-    # return any(is_ping_success(i) for i in range(ping_count))
-
-
 
   # helper functions - maybe move these into their own class and import it later?
   def base64url_escape(self, b64):
@@ -198,9 +199,7 @@ class Configuration:
     self.parse_arguments(args)
 
     if self.skip_reboot and self.reboot_now:
-      msg = 'Incompatible options: --reboot and --skip-reboot\n'
-      print(msg, file=sys.stderr)
-      logging.error(msg)
+      print_and_log('Incompatible options: --reboot and --skip-reboot', 'ERROR')
       if sys.stdin and sys.stdin.isatty():
         self.parser.print_help(sys.stderr)
       sys.exit(2)
@@ -266,8 +265,8 @@ class Configuration:
     # ping configuration 
     self.parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping. pass the source IP on Windows')
     self.parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping (defaults to google.com)')
-    self.parser.add_argument('--ping-count', type=int, default='1', help='how many ping health checks to perform')
-    self.parser.add_argument('--ping-interval', type=int, default='10', help='how long in seconds to wait between ping health checks')
+    self.parser.add_argument('--ping-count', type=int, default=1, help='how many ping health checks to perform (defaults to 1)')
+    self.parser.add_argument('--ping-interval', type=int, default=10, help='how long in seconds to wait between ping health checks (defaults to 10)')
     # reboot settings
     self.parser.add_argument('-R', '--reboot', action='store_true', help='skip health checks and immediately reboot gateway')
     self.parser.add_argument('-r', '--skip-reboot', action='store_true', help='skip rebooting gateway')
@@ -281,7 +280,10 @@ class Configuration:
     self.parser.add_argument('-5', '--5g-band', type=str, action='append', dest='secondary_band', default=None, choices=['n41', 'n71'], help='the 5g band(s) to check (defaults to n41)')
     self.parser.add_argument('--enbid', type=int, default=None, help='check for a connection to a given eNB ID')
     # general configuration
-    self.parser.add_argument('--log-all', action='store_true', help='write connection details to logfile')
+    self.parser.add_argument('--print-config', action='store_true', help='output configuration settings')
+    self.parser.add_argument('--logfile', type=str, default='tmo-monitor.log', help='output file for logging')
+    self.parser.add_argument('--log-all', action='store_true', help='always write connection details to logfile')
+    self.parser.add_argument('--log-delta', action='store_true', help='write connection details to logfile on change')
     return self.parser.parse_args()
 
   def parse_arguments(self, args):
@@ -297,8 +299,10 @@ class Configuration:
       tmp = getattr(args, var)
       if tmp != None:
         self.connection[var] = tmp
-    if args.log_all == True:
-      self.general['log_all'] = True
+    self.general['logfile'] = args.logfile
+    for var in {'print_config', 'log_all', 'log_delta'}:
+      tmp = getattr(args, var)
+      self.general[var] = tmp
 
     if args.uptime != None:
       self.reboot['uptime'] = args.uptime    
@@ -354,7 +358,7 @@ if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y/%m/%d %H:%M:%S', 
       filename=config.general['logfile'], level=logging.INFO)
   if config.reboot_now:
-    logging.info('Immediate reboot requested.')
+    print_and_log('Immediate reboot requested.')
     reboot_requested = True
   else:
     reboot_requested = False
@@ -373,9 +377,7 @@ if __name__ == "__main__":
       site_meta = tc_control.get_site_info()
       connection['enbid'] = site_meta['eNBID']
       if (site_meta['eNBID'] != config.connection['enbid']) and config.reboot['enbid']:
-        msg = 'Not on eNB ID ' + str(config.connection['enbid']) + ', on ' + str(site_meta['eNBID']) + '.'
-        print(msg)
-        logging.info(msg)
+        print_and_log('Not on eNB ID ' + str(config.connection['enbid']) + ', on ' + str(site_meta['eNBID']) + '.')
         reboot_requested = True
       else:
         print('eNB ID check passed, on ' + str(site_meta['eNBID']) + '.')
@@ -389,9 +391,7 @@ if __name__ == "__main__":
         band_4g = signal_info['cell_LTE_stats_cfg'][0]['stat']['Band']
         connection['4G'] = band_4g
         if (band_4g not in primary_band) and config.reboot['4G_band']:
-          msg = 'Not on ' + ('one of ' if len(primary_band) > 1 else '') + ', '.join(primary_band) + '.'
-          print(msg)
-          logging.info(msg)
+          print_and_log('Not on ' + ('one of ' if len(primary_band) > 1 else '') + ', '.join(primary_band) + '.')
           if config.reboot['4G_band']:
             reboot_requested = True
         else:
@@ -402,9 +402,7 @@ if __name__ == "__main__":
       band_5g = signal_info['cell_5G_stats_cfg'][0]['stat']['Band']
       connection['5G'] = band_5g
       if band_5g not in secondary_band and config.reboot['5G_band']:
-        msg = 'Not on ' + ('one of ' if len(secondary_band) > 1 else '') + ', '.join(secondary_band) + '.'
-        print(msg)
-        logging.info(msg)
+        print_and_log('Not on ' + ('one of ' if len(secondary_band) > 1 else '') + ', '.join(secondary_band) + '.')
         if config.reboot['5G_band']:
           reboot_requested = True
       else:
@@ -417,9 +415,7 @@ if __name__ == "__main__":
       if log_all:
         connection['ping'] = ping_ms
       if ping_ms < 0:
-        msg = 'Could not ping ' + config.ping['ping_host'] + '.'
-        print(msg)
-        logging.error(msg)
+        print_and_log('Could not ping ' + config.ping['ping_host'] + '.', 'ERROR')
         if config.reboot['ping']:
           reboot_requested = True
 
@@ -428,21 +424,15 @@ if __name__ == "__main__":
     connection['uptime'] = tc_control.get_uptime()
   if reboot_requested:
     if config.skip_reboot:
-      print('Not rebooting.')
+      print_and_log('Not rebooting.')
     else:
-      msg = 'Reboot requested.'
-      print(msg)
-      logging.info(msg)
+      print_and_log('Reboot requested.')
 
       if config.reboot_now or (connection['uptime'] >= config.reboot['uptime']):
-        msg = 'Rebooting.'
-        print(msg)
-        logging.info(msg)
+        print_and_log('Rebooting.')
         tc_control.reboot()
       else:
-        msg = 'Uptime threshold not met for reboot.'
-        print(msg)
-        logging.info(msg)
+        print_and_log('Uptime threshold not met for reboot.')
   else:
     print('No reboot necessary.')
   
@@ -452,29 +442,19 @@ if __name__ == "__main__":
         if line.__contains__('|'):
           data = parse("{0} [INFO] 4G: {1} |  5G: {2} | eNB ID: {3} | Avg Ping: {4} ms | Uptime: {5} sec", line)
           if data[1] != connection['4G']:
-            msg = "4G connection is {0}, was {1}".format(connection['4G'], data[1])
-            print(msg)
-            logging.info(msg)
+            print_and_log("4G connection is {0}, was {1}".format(connection['4G'], data[1]))
             config.general['log_all'] = True
           if data[2] != connection['5G']:
-            msg = "5G connection is {0}, was {1}".format(connection['5G'], data[2])
-            print(msg)
-            logging.info(msg)
+            print_and_log("5G connection is {0}, was {1}".format(connection['5G'], data[2]))
             config.general['log_all'] = True
           if int(data[3]) != connection['enbid']:
-            msg = "eNB ID is {0}, was {1}".format(connection['enbid'], data[3])
-            print(msg)
-            logging.info(msg)
+            print_and_log("eNB ID is {0}, was {1}".format(connection['enbid'], data[3]))
             config.general['log_all'] = True
           if int(data[4]) * 3 < connection['ping']:
-            msg = "Ping ms {0}, over 3x {1} ms".format(connection['ping'], data[4])
-            print(msg)
-            logging.info(msg)
+            print_and_log("Ping ms {0}, over 3x {1} ms".format(connection['ping'], data[4]))
             config.general['log_all'] = True
           if int(data[5]) > connection['uptime']:
-            msg = "Uptime {0} sec, less than {1} sec".format(connection['uptime'], data[5])
-            print(msg)
-            logging.info(msg)
+            print_and_log("Uptime {0} sec, less than {1} sec".format(connection['uptime'], data[5]))
             config.general['log_all'] = True
 
   if log_all and config.general['log_all']:
@@ -483,5 +463,4 @@ if __name__ == "__main__":
     else:
       msg = "4G: {0} |  5G: {1} | eNB ID: {2} | Avg Ping: {3} ms | Uptime: {4} sec".format(
         connection['4G'], connection['5G'], connection['enbid'], connection['ping'], connection['uptime'])
-      print(msg)
-      logging.info(msg)
+      print_and_log(msg)
