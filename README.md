@@ -110,11 +110,13 @@ optional arguments:
 
 ### General settings
 
-**Logfile** `--logfile LOGFILE`     
+**Logfile:** `--logfile LOGFILE`     
     Output file for logging. Defaults to `tmo-monitor.log`
-**Log all** `--log-all`
-    Always write connection details to logfile. Checks all configuration settings. 
-**Log delta** `--log-delta`
+
+**Log all:** `--log-all`
+    Always write connection details to logfile. Checks all configuration settings.
+
+**Log delta:** `--log-delta`
     Write connection details to logfile on change of any configuration setting or long ping time.
 
 ### Default settings
