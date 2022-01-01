@@ -47,7 +47,7 @@ optional arguments:
                         how long in seconds to wait between ping health checks
   -R, --reboot          skip health checks and immediately reboot gateway
   -r, --skip-reboot     skip rebooting gateway
-  --skip-bands          skip check for connected band
+  --skip-bands          skip check for connected 4g band
   --skip-5g-bands       skip check for connected 5g band
   --skip-ping           skip check for successful ping
   --skip-enbid          skip check for connected eNB ID
@@ -87,7 +87,7 @@ optional arguments:
     Skip rebooting gateway.
 
 **Skip Bands:** `--skip-bands`
-    Skip check for connected band.
+    Skip check for connected 4g band.
 
 **Skip 5g Bands:** `--skip-5g-bands`
     Skip check for connected 5g band.
