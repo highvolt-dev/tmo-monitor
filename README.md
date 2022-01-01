@@ -110,7 +110,7 @@ optional arguments:
 
 ### General settings
 
-**Logfile:** `--logfile LOGFILE`     
+**Logfile:** `--logfile LOGFILE`
     Output file for logging. Defaults to `tmo-monitor.log`
 
 **Log all:** `--log-all`
@@ -131,7 +131,7 @@ The script is normally run in batch mode, such as scheduled through a `cron` job
 
 A common usage pattern would be to configure the script using a `.env` file to reboot on 5G band and wifi check. When messing with the settings, a user might want to specify `--skip-reboot`. When a user knows that the reboot is needed they might specify `--reboot` for an immediate reboot.
 
-- Default settings have the lowest precendence. 
+- Default settings have the lowest precendence.
 - Environment settings--whether in the shell environment or a `.env` file--override the defaults
 - Command line options have the highest precedence and override both default settings and environment settings
 
@@ -146,9 +146,9 @@ Environment settings are meant to be declarative. They fall into four categories
     - Skip reboot overrides all reboot requests
     - Reboot interval overrides all reboot requests
     - There is no "reboot immediately" option
-- General settings: 
+- General settings:
     - Default output/silent mode _(not yet implemented)_
-    - Logging settings 
+    - Logging settings
 
 
 ## Roadmap

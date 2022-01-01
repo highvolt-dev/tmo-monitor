@@ -117,7 +117,7 @@ class TrashCanController:
       sys.exit(2)
     uptime_req.raise_for_status()
     return uptime_req.json()['device_app_status'][0]['UpTime']
-  
+
   def get_signal_info(self):
     try:
       signal_request = requests.get('http://192.168.12.1/fastmile_radio_status_web_app.cgi')
@@ -192,7 +192,7 @@ class Configuration:
     self.connection = dict([('primary_band', ''), ('secondary_band', 'n41'), ('enbid', ''), ('uptime', '')])
     self.reboot = dict([('uptime', 90), ('ping', False), ('4G_band', False), ('5G_band', False), ('enbid', False)])
     self.general = dict([('print_config', False), ('logfile', ''), ('log_all', False), ('log_delta', False)])
-  
+
     # Command line arguments override defaults & .env file
     self.read_environment()
     args = self.parse_commandline()
@@ -206,7 +206,7 @@ class Configuration:
     if self.skip_reboot:
       for var in {'ping', '4G_band', '5G_band', 'enbid'}:
         self.reboot[var] = False
-    if not self.login['password']:    
+    if not self.login['password']:
       self.password = getpass.getpass('Password: ')
 
 
@@ -224,7 +224,7 @@ class Configuration:
     for var in {'interface', 'ping_host', 'ping_count', 'ping_interval'}:
       tmp = os.environ.get('tmo_' + var)
       if tmp != None:
-        self.ping[var] = tmp  
+        self.ping[var] = tmp
     for var in {'primary_band', 'secondary_band'}:
       tmp = os.environ.get('tmo_' + var)
       if tmp != None:
@@ -250,19 +250,19 @@ class Configuration:
     if tmp != None:
         self.general['logfile'] = tmp
     for var in {'print_config', 'log_all', 'log_delta'}:
-      tmp = os.environ.get('tmo_' + var)    
+      tmp = os.environ.get('tmo_' + var)
       if tmp != None:
           if tmp.lower() == 'true':
             self.general[var] = True
           else:
             self.general[var] = False
-    
+
   def parse_commandline(self):
     self.parser = argparse.ArgumentParser(description='Check T-Mobile Home Internet cellular band(s) and connectivity and reboot if necessary')
     # login settings
     self.parser.add_argument('username', type=str, help='the username (most likely "admin")', nargs='?')
     self.parser.add_argument('password', type=str, help='the administrative password (will be requested at runtime if not passed as argument)', nargs='?')
-    # ping configuration 
+    # ping configuration
     self.parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping. pass the source IP on Windows')
     self.parser.add_argument('-H', '--ping-host', type=str, default='google.com', help='the host to ping (defaults to google.com)')
     self.parser.add_argument('--ping-count', type=int, default=1, help='how many ping health checks to perform (defaults to 1)')
@@ -294,7 +294,7 @@ class Configuration:
     for var in {'interface', 'ping_host', 'ping_count', 'ping_interval'}:
       tmp = getattr(args, var)
       if tmp != None:
-        self.ping[var] = tmp  
+        self.ping[var] = tmp
     for var in {'primary_band', 'secondary_band', 'enbid'}:
       tmp = getattr(args, var)
       if tmp != None:
@@ -305,7 +305,7 @@ class Configuration:
       self.general[var] = tmp
 
     if args.uptime != None:
-      self.reboot['uptime'] = args.uptime    
+      self.reboot['uptime'] = args.uptime
     if args.skip_ping == True:
       self.reboot['ping'] = False
     if self.connection['primary_band'] == '' or args.skip_bands == True:
@@ -355,7 +355,7 @@ if __name__ == "__main__":
     config.print_config()
   if config.general['logfile']:
     # DEBUG logs go to console, all other logs to this file
-    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y/%m/%d %H:%M:%S', 
+    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y/%m/%d %H:%M:%S',
       filename=config.general['logfile'], level=logging.INFO)
   if config.reboot_now:
     print_and_log('Immediate reboot requested.')
@@ -363,7 +363,7 @@ if __name__ == "__main__":
   else:
     reboot_requested = False
 
-  log_all = False  
+  log_all = False
   if config.general['log_all'] or config.general['log_delta']:
     log_all = True
     connection = dict([('4G', ''), ('5G', ''), ('enbid', ''), ('ping', '')])
@@ -410,7 +410,7 @@ if __name__ == "__main__":
 
     # Check for successful ping
     if config.reboot['ping']:
-      ping_ms = tc_control.ping(config.ping['ping_host'], config.ping['ping_count'], 
+      ping_ms = tc_control.ping(config.ping['ping_host'], config.ping['ping_count'],
         config.ping['ping_interval'], config.ping['interface'])
       if log_all:
         connection['ping'] = ping_ms
@@ -435,7 +435,7 @@ if __name__ == "__main__":
         print_and_log('Uptime threshold not met for reboot.')
   else:
     print('No reboot necessary.')
-  
+
   if log_all and config.general['log_delta'] and config.general['logfile']:
     logline = tailer.tail(open(config.general['logfile']), 1)
     for line in logline:
