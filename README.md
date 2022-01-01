@@ -74,7 +74,7 @@ optional arguments:
     Defaults to `google.com` - override if you'd like to ping an alternate host to determine internet connectivity. Must specify a host if flag is provided - you can simply omit the flag if you'd like to use the default google.com ping check.
 
 **Ping Count:** `--ping-count`
-    Defaults to `1` - override if you'd like to perform multiple ping checks before rebooting.
+    Defaults to `1` - override if you'd like to perform multiple ping checks before rebooting. Short-circuits if a successful ping is encountered. Will reboot if all fail.
 
 **Ping Interval:** `--ping-interval`
     Defaults to `10` seconds - override if you'd like to use a different interval.
