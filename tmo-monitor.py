@@ -17,7 +17,6 @@ import re
 import tailer
 from parse import *
 
-
 def print_and_log(msg, level='INFO'):
   print(msg)
   lvl = logging.getLevelName(level)
