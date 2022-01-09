@@ -425,15 +425,13 @@ if __name__ == "__main__":
         print('Camping on ' + band_5g + '.')
 
     # Check for successful ping
-    if config.reboot['ping']:
-      ping_ms = tc_control.ping(config.ping['ping_host'], config.ping['ping_count'],
-        config.ping['ping_interval'], config.ping['interface'])
-      if log_all:
-        connection['ping'] = ping_ms
-      if ping_ms < 0:
-        print_and_log('Could not ping ' + config.ping['ping_host'] + '.', 'ERROR')
-        if config.reboot['ping']:
-          reboot_requested = True
+    ping_ms = tc_control.ping(config.ping['ping_host'], config.ping['ping_count'], config.ping['ping_interval'], config.ping['interface'])
+    if log_all:
+      connection['ping'] = ping_ms
+    if ping_ms < 0:
+      print_and_log('Could not ping ' + config.ping['ping_host'] + '.', 'ERROR')
+      if config.reboot['ping']:
+        reboot_requested = True
 
   # Reboot if needed
   if (reboot_requested or log_all):
