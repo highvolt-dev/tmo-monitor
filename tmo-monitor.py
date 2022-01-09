@@ -190,7 +190,7 @@ class Configuration:
     self.login = dict([('username', 'admin'), ('password', '')])
     self.ping = dict([('interface', ''), ('ping_host', 'google.com'), ('ping_count', 1), ('ping_interval', 10)])
     self.connection = dict([('primary_band', None), ('secondary_band', ['n41']), ('enbid', None), ('uptime', '')])
-    self.reboot = dict([('uptime', 90), ('ping', False), ('4G_band', False), ('5G_band', False), ('enbid', False)])
+    self.reboot = dict([('uptime', 90), ('ping', True), ('4G_band', True), ('5G_band', True), ('enbid', True)])
     self.general = dict([('print_config', False), ('logfile', ''), ('log_all', False), ('log_delta', False)])
 
     # Command line arguments override defaults & .env file
@@ -237,13 +237,15 @@ class Configuration:
     if tmp != None:
       self.reboot['uptime'] = tmp
 
+    # Default all reboot options to true, .env file can override to false
     for var in {'ping', '4G_band', '5G_band', 'enbid'}:
       tmp = os.environ.get('tmo_' + var + '_reboot')
       if tmp != None:
-        if tmp.lower() == 'true':
-          self.reboot[var] = True
-        else:
+        if tmp.lower() == 'false':
           self.reboot[var] = False
+        else:
+          self.reboot[var] = True
+      
     tmp = os.environ.get('tmo_skip_reboot')
     if tmp != None:
       if tmp.lower() == 'true':
@@ -310,13 +312,23 @@ class Configuration:
 
     if args.uptime != None:
       self.reboot['uptime'] = args.uptime
+
+    # At this point in the script self.reboot[*] defaults to True unless overridden in .env file
+
+    # Reboot on ping by default, override for args.skip_ping
     if args.skip_ping == True:
       self.reboot['ping'] = False
-    if self.connection['primary_band'] == '' or args.skip_bands == True:
+
+    # Reboot on primary (4G) band only if one is specified & no overrides
+    if self.connection['primary_band'] == None or args.skip_bands == True:
       self.reboot['4G_band'] = False
-    if self.connection['secondary_band'] == '' or args.skip_5g_bands == True:
+
+    # Secondary band has default (n41). Reboot only if skipped on command line
+    if args.skip_5g_bands == True:
       self.reboot['5G_band'] = False
-    if self.connection['enbid'] == '' or args.skip_enbid == True:
+
+    # Reboot on enbid only if one is specified & no overrides
+    if self.connection['enbid'] == None or args.skip_enbid == True:
       self.reboot['enbid'] = False
 
     if args.skip_reboot == True:
@@ -413,15 +425,13 @@ if __name__ == "__main__":
         print('Camping on ' + band_5g + '.')
 
     # Check for successful ping
-    if config.reboot['ping']:
-      ping_ms = tc_control.ping(config.ping['ping_host'], config.ping['ping_count'],
-        config.ping['ping_interval'], config.ping['interface'])
-      if log_all:
-        connection['ping'] = ping_ms
-      if ping_ms < 0:
-        print_and_log('Could not ping ' + config.ping['ping_host'] + '.', 'ERROR')
-        if config.reboot['ping']:
-          reboot_requested = True
+    ping_ms = tc_control.ping(config.ping['ping_host'], config.ping['ping_count'], config.ping['ping_interval'], config.ping['interface'])
+    if log_all:
+      connection['ping'] = ping_ms
+    if ping_ms < 0:
+      print_and_log('Could not ping ' + config.ping['ping_host'] + '.', 'ERROR')
+      if config.reboot['ping']:
+        reboot_requested = True
 
   # Reboot if needed
   if (reboot_requested or log_all):
