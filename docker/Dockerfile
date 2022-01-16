@@ -6,9 +6,9 @@ RUN apk add iputils git
 
 RUN adduser -D -h /monitor monitor
 
-COPY entrypoint.sh /
+COPY docker/entrypoint.sh /
 
-COPY ../ /tmo-monitor
+COPY . /tmo-monitor
 RUN cd tmo-monitor && \
     pip3 install -r requirements.txt
 
