@@ -1,4 +1,5 @@
 /.git/
 *
-/!*.py
-/!requirements.txt
+!/*.py
+!/requirements.txt
+!/docker/entrypoint.sh
