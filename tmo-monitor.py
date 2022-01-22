@@ -147,7 +147,7 @@ class TrashCanController:
         return -1
       if is_win and 'Destination host unreachable' in str(ping_exec.stdout):
         return -1
-      pattern = b'(?:rtt|round-trip) min/avg/max/(?:mdev|stddev) = \d+.\d+/(\d+.\d+)/\d+.\d+/\d+.\d+ ms'
+      pattern = b'(?:rtt|round-trip) min/avg/max(?:/(?:mdev|stddev))? = \d+.\d+/(\d+.\d+)/\d+.\d+(?:/\d+.\d+)? ms'
       if is_win:
         pattern = b'Minimum = \d+ms, Maximum = \d+ms, Average = (\d+)ms'
       ping_ms = re.search(pattern, ping_exec.stdout)
