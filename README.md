@@ -7,7 +7,7 @@ By default, checks for n41 5G signal and connectivity to google.com via ping.
 
 ### Install dependencies
 
-`pip3 install -r requirements.txt`
+`pip3 install .`
 
 ### Mark as executable
 
@@ -23,8 +23,9 @@ usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST]
                       [--skip-5g-bands] [--skip-ping] [--skip-enbid]
                       [--uptime UPTIME]
                       [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}]
-                      [-5 {n41,n71}] [--enbid ENBID] [--logfile LOGFILE]
+                      [-5 {n41,n71}] [--enbid ENBID] [--print-config] [--logfile LOGFILE]
                       [--log-all] [--log-delta]
+                      [--model {NOK5G21,ARCKVD21}]
                       [username] [password]
 
 Check T-Mobile Home Internet cellular band(s) and connectivity and reboot if
@@ -62,9 +63,18 @@ optional arguments:
   --logfile LOGFILE     output file for logging
   --log-all             always write connection details to logfile
   --log-delta           write connection details to logfile on change
+  --model {NOK5G21,ARCKVD21}
+                        the gateway model (defaults to NOK5G21)
 ```
 
 ## Options
+
+### Gateway Model
+**Gateway Model:** `--model`
+
+By default, the script will assume the silver-colored Nokia NOK5G21 gateway is being used.
+
+Valid values are `NOK5G21` for the Nokia gateway, or `ARCKVD21` for the square, black-colored Arcadyan gateway.
 
 ### Ping options
 **Interface:** `-I --interface`
