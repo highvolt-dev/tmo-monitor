@@ -33,7 +33,7 @@ if __name__ == "__main__":
   if config.model == GatewayModel.NOKIA:
     gw_control = TrashCanController(config.login['username'], config.login['password'])
   elif config.model == GatewayModel.ARCADYAN:
-    gw_control = CubeController()
+    gw_control = CubeController(config.login['username'], config.login['password'])
   else:
     raise Exception('Unsupported Gateway Model')
 

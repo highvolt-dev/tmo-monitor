@@ -1,16 +1,41 @@
 import requests
 import sys
 import logging
+import math
 from .base import ControllerBase
 
 class CubeController(ControllerBase):
-  def __init__(self):
+  def __init__(self, username, password):
+    self.username = username
+    self.password = password
     self.info_web = None
+    self.app_token = None
   # functions using authenticated app API endpoints
   def login_app(self):
-    raise Exception('Not implemented')
+    try:
+      login_request = requests.post('http://192.168.12.1/TMI/v1/auth/login', json={'username': self.username, 'password': self.password})
+    except:
+      logging.critical("Could not post login request, exiting.")
+      sys.exit(2)
+    login_request.raise_for_status()
+    self.app_token = login_request.json()['auth']['token']
+
   def get_site_info(self):
-    raise Exception('Not implemented')
+    try:
+      if not self.app_token:
+        self.login_app()
+      stat_request = requests.get('http://192.168.12.1/TMI/v1/network/telemetry?get=all', headers={'Authorization': 'Bearer ' + self.app_token})
+    except:
+      logging.critical("Could not query site info, exiting.")
+      sys.exit(2)
+
+    stat_request.raise_for_status()
+    meta = stat_request.json()['cell']['4g']
+
+    return {
+      'eNBID': math.floor(int(meta['ecgi'][6:], 16)/256),
+      'PLMN': meta['mcc'] + '-' + meta['mnc']
+    }
   # functions using authenticated web API endpoints
   def login_web(self):
     raise Exception('Not implemented')
