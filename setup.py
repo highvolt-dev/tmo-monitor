@@ -8,7 +8,10 @@ setup(
   url='https://github.com/highvolt-dev/tmo-monitor',
   author='highvolt-dev',
   license='MIT',
-  packages=['tmo_monitor'],
+  packages=[
+    'tmo_monitor',
+    'tmo_monitor.gateway'
+  ],
   scripts=['bin/tmo-monitor.py'],
   install_requires=[
     'parse',
