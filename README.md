@@ -7,7 +7,7 @@ By default, checks for n41 5G signal and connectivity to google.com via ping.
 
 ### Install dependencies
 
-`pip3 install -r requirements.txt`
+`pip3 install .`
 
 ### Mark as executable
 
