@@ -36,10 +36,17 @@ class CubeController(ControllerBase):
       'eNBID': math.floor(int(meta['ecgi'][6:], 16)/256),
       'PLMN': meta['mcc'] + '-' + meta['mnc']
     }
+  def reboot(self):
+    try:
+      if not self.app_token:
+        self.login_app()
+      reboot_request = requests.post('http://192.168.12.1/TMI/v1/gateway/reset?set=reboot', headers={'Authorization': 'Bearer ' + self.app_token})
+    except:
+      logging.critical("Could not post reboot request, exiting.")
+      sys.exit(2)
+    reboot_request.raise_for_status()
   # functions using authenticated web API endpoints
   def login_web(self):
-    raise Exception('Not implemented')
-  def reboot(self):
     raise Exception('Not implemented')
   # functions using unauthenticated API endpoints
   def get_all_info_web(self):
