@@ -2,7 +2,7 @@ FROM python:alpine
 
 LABEL org.opencontainers.image.source="https://github.com/highvolt-dev/tmo-monitor"
 
-RUN apk add git
+RUN apk add git iputils-ping
 
 RUN adduser -D -h /monitor monitor
 
