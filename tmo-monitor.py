@@ -16,6 +16,7 @@ from dotenv import load_dotenv, find_dotenv
 import re
 import tailer
 from parse import *
+from enum import Enum
 
 def print_and_log(msg, level='INFO'):
   print(msg)
@@ -24,7 +25,81 @@ def print_and_log(msg, level='INFO'):
     lvl = 20 # Set to INFO as default, Python bug between 3.4 to 3.42
   logging.log(lvl, msg)
 
-class TrashCanController:
+class GatewayModel(Enum):
+  NOKIA = 'NOK5G21'
+  ARCADYAN = 'ARCKVD21'
+
+class ControllerBase:
+  # functions that don't touch the API
+  def ping(self, ping_host, ping_count, ping_interval, interface = None):
+    is_win = platform.system() == 'Windows'
+    ping_cmd = ['ping']
+    if interface:
+      ping_cmd.append('-S' if is_win else '-I')
+      ping_cmd.append(interface)
+    ping_cmd.append('-n' if is_win else '-c')
+    ping_cmd.append('1')
+    ping_cmd.append(ping_host)
+
+    def ping_time(ping_index):
+      if ping_index > 0:
+        time.sleep(ping_interval)
+      ping_exec = subprocess.run(ping_cmd, capture_output=True)
+      print(ping_exec.stdout.decode('utf-8'))
+      if ping_exec.returncode != 0:
+        return -1
+      if is_win and 'Destination host unreachable' in str(ping_exec.stdout):
+        return -1
+      pattern = b'(?:rtt|round-trip) min/avg/max(?:/(?:mdev|stddev))? = \d+.\d+/(\d+.\d+)/\d+.\d+(?:/\d+.\d+)? ms'
+      if is_win:
+        pattern = b'Minimum = \d+ms, Maximum = \d+ms, Average = (\d+)ms'
+      ping_ms = re.search(pattern, ping_exec.stdout)
+      return round(float(ping_ms.group(1)))
+
+    for i in range (ping_count):
+      result = ping_time(i)
+      if result > 0:
+        return result
+    return -1
+
+class CubeController(ControllerBase):
+  def __init__(self):
+    self.info_web = None
+  # functions using authenticated app API endpoints
+  def login_app(self):
+    raise Exception('Not implemented')
+  def get_site_info(self):
+    raise Exception('Not implemented')
+  # functions using authenticated web API endpoints
+  def login_web(self):
+    raise Exception('Not implemented')
+  def reboot(self):
+    raise Exception('Not implemented')
+  # functions using unauthenticated API endpoints
+  def get_all_info_web(self):
+    if self.info_web is not None:
+      return self.info_web
+    try:
+      signal_request = requests.get('http://192.168.12.1/TMI/v1/gateway?get=all')
+    except:
+      logging.critical("Could not query signal status, exiting.")
+      sys.exit(2)
+    signal_request.raise_for_status()
+    self.info_web = signal_request.json()
+    return self.info_web
+  def get_uptime(self):
+    return self.get_all_info_web()['time']['upTime']
+  def get_signal_info(self):
+    info = self.get_all_info_web()
+    lte_info = info['signal']['4g']['bands']
+    nr_info = info['signal']['5g']['bands']
+
+    return {
+      '4G': None if len(lte_info) == 0 else lte_info[0].upper(),
+      '5G': None if len(nr_info) == 0 else nr_info[0]
+    }
+
+class TrashCanController(ControllerBase):
   def __init__(self, username, password):
     self.username = username
     self.password = password
@@ -125,39 +200,12 @@ class TrashCanController:
       logging.critical("Could not query signal status, exiting.")
       sys.exit(2)
     signal_request.raise_for_status()
-    return signal_request.json()
+    info = signal_request.json()
 
-  # functions that don't touch the API
-  def ping(self, ping_host, ping_count, ping_interval, interface = None):
-    is_win = platform.system() == 'Windows'
-    ping_cmd = ['ping']
-    if interface:
-      ping_cmd.append('-S' if is_win else '-I')
-      ping_cmd.append(interface)
-    ping_cmd.append('-n' if is_win else '-c')
-    ping_cmd.append('1')
-    ping_cmd.append(ping_host)
-
-    def ping_time(ping_index):
-      if ping_index > 0:
-        time.sleep(ping_interval)
-      ping_exec = subprocess.run(ping_cmd, capture_output=True)
-      print(ping_exec.stdout.decode('utf-8'))
-      if ping_exec.returncode != 0:
-        return -1
-      if is_win and 'Destination host unreachable' in str(ping_exec.stdout):
-        return -1
-      pattern = b'(?:rtt|round-trip) min/avg/max(?:/(?:mdev|stddev))? = \d+.\d+/(\d+.\d+)/\d+.\d+(?:/\d+.\d+)? ms'
-      if is_win:
-        pattern = b'Minimum = \d+ms, Maximum = \d+ms, Average = (\d+)ms'
-      ping_ms = re.search(pattern, ping_exec.stdout)
-      return round(float(ping_ms.group(1)))
-
-    for i in range (ping_count):
-      result = ping_time(i)
-      if result > 0:
-        return result
-    return -1
+    return {
+      '4G': info['cell_LTE_stats_cfg'][0]['stat']['Band'],
+      '5G': info['cell_5G_stats_cfg'][0]['stat']['Band']
+    }
 
   # helper functions - maybe move these into their own class and import it later?
   def base64url_escape(self, b64):
@@ -192,6 +240,7 @@ class Configuration:
     self.connection = dict([('primary_band', None), ('secondary_band', ['n41']), ('enbid', None), ('uptime', '')])
     self.reboot = dict([('uptime', 90), ('ping', True), ('4G_band', True), ('5G_band', True), ('enbid', True)])
     self.general = dict([('print_config', False), ('logfile', ''), ('log_all', False), ('log_delta', False)])
+    self.model = GatewayModel.NOKIA
 
     # Command line arguments override defaults & .env file
     self.read_environment()
@@ -245,7 +294,7 @@ class Configuration:
           self.reboot[var] = False
         else:
           self.reboot[var] = True
-      
+
     tmp = os.environ.get('tmo_skip_reboot')
     if tmp != None:
       if tmp.lower() == 'true':
@@ -262,6 +311,9 @@ class Configuration:
             self.general[var] = True
           else:
             self.general[var] = False
+    tmp = os.environ.get('tmo_model')
+    if tmp != None:
+      self.model = GatewayModel(tmp)
 
   def parse_commandline(self):
     self.parser = argparse.ArgumentParser(description='Check T-Mobile Home Internet cellular band(s) and connectivity and reboot if necessary')
@@ -290,6 +342,7 @@ class Configuration:
     self.parser.add_argument('--logfile', type=str, default=self.general['logfile'], help='output file for logging')
     self.parser.add_argument('--log-all', action='store_true', default=self.general['log_all'], help='always write connection details to logfile')
     self.parser.add_argument('--log-delta', action='store_true', default=self.general['log_delta'], help='write connection details to logfile on change')
+    self.parser.add_argument('--model', type=str, default=self.model, choices=[GatewayModel.NOKIA.value, GatewayModel.ARCADYAN.value], help='the gateway model (defaults to NOK5G21)')
     return self.parser.parse_args()
 
   def parse_arguments(self, args):
@@ -336,8 +389,12 @@ class Configuration:
     if args.reboot == True:
       self.reboot_now = True
 
+    if args.model is not None:
+      self.model = GatewayModel(args.model)
+
   def print_config(self):
     print("Script configuration:")
+    print("  Gateway model: " + self.model.value)
     if sys.stdin and sys.stdin.isatty():
       print("  Login info:")
       print("    Username: " + self.login.get('username') if self.login.get('username') else '')
@@ -384,13 +441,18 @@ if __name__ == "__main__":
   if config.general['log_all'] or config.general['log_delta']:
     log_all = True
 
-  tc_control = TrashCanController(config.login['username'], config.login['password'])
+  if config.model == GatewayModel.NOKIA:
+    gw_control = TrashCanController(config.login['username'], config.login['password'])
+  elif config.model == GatewayModel.ARCADYAN:
+    gw_control = CubeController()
+  else:
+    raise Exception('Unsupported Gateway Model')
 
   if not reboot_requested:
 
     # Check for eNB ID if an eNB ID was supplied & reboot on eNB ID wasn't False in the .env
     if config.connection['enbid'] and config.reboot['enbid'] or log_all:
-      site_meta = tc_control.get_site_info()
+      site_meta = gw_control.get_site_info()
       connection['enbid'] = site_meta['eNBID']
       if (site_meta['eNBID'] != config.connection['enbid']) and config.reboot['enbid']:
         print_and_log('Not on eNB ID ' + str(config.connection['enbid']) + ', on ' + str(site_meta['eNBID']) + '.')
@@ -400,11 +462,11 @@ if __name__ == "__main__":
 
     # Check for preferred bands regardless of reboot on band mismatch
     if config.reboot['4G_band'] or config.reboot['5G_band'] or log_all:
-      signal_info = tc_control.get_signal_info()
+      signal_info = gw_control.get_signal_info()
 
       if config.connection['primary_band'] or log_all:
         primary_band = config.connection['primary_band']
-        band_4g = signal_info['cell_LTE_stats_cfg'][0]['stat']['Band']
+        band_4g = signal_info['4G']
         connection['4G'] = band_4g
         if (primary_band and band_4g not in primary_band) and config.reboot['4G_band']:
           print_and_log('Not on ' + ('one of ' if len(primary_band) > 1 else '') + ', '.join(primary_band) + '.')
@@ -415,7 +477,7 @@ if __name__ == "__main__":
 
       # 5G has a default value set (n41)
       secondary_band = config.connection['secondary_band']
-      band_5g = signal_info['cell_5G_stats_cfg'][0]['stat']['Band']
+      band_5g = signal_info['5G']
       connection['5G'] = band_5g
       if band_5g not in secondary_band and config.reboot['5G_band']:
         print_and_log('Not on ' + ('one of ' if len(secondary_band) > 1 else '') + ', '.join(secondary_band) + '.')
@@ -425,7 +487,7 @@ if __name__ == "__main__":
         print('Camping on ' + band_5g + '.')
 
     # Check for successful ping
-    ping_ms = tc_control.ping(config.ping['ping_host'], config.ping['ping_count'], config.ping['ping_interval'], config.ping['interface'])
+    ping_ms = gw_control.ping(config.ping['ping_host'], config.ping['ping_count'], config.ping['ping_interval'], config.ping['interface'])
     if log_all:
       connection['ping'] = ping_ms
     if ping_ms < 0:
@@ -435,7 +497,7 @@ if __name__ == "__main__":
 
   # Reboot if needed
   if (reboot_requested or log_all):
-    connection['uptime'] = tc_control.get_uptime()
+    connection['uptime'] = gw_control.get_uptime()
   if reboot_requested:
     if config.skip_reboot:
       print_and_log('Not rebooting.')
@@ -444,7 +506,7 @@ if __name__ == "__main__":
 
       if config.reboot_now or (connection['uptime'] >= config.reboot['uptime']):
         print_and_log('Rebooting.')
-        tc_control.reboot()
+        gw_control.reboot()
       else:
         print_and_log('Uptime threshold not met for reboot.')
   else:
