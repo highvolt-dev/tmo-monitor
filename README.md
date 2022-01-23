@@ -190,8 +190,8 @@ docker run -v /etc/localtime:/etc/localtime:ro -v $PWD/monitor.env:/.env:ro -v $
 with the following crontab:
 
 ```
-*/2 * * * * /tmo-monitor/tmo-monitor.py --skip-bands
-1 4 * * * /tmo-monitor/tmo-monitor.py --skip-ping
+*/2 * * * * tmo-monitor.py --skip-bands
+1 4 * * * tmo-monitor.py --skip-ping
 ```
 
 will run a ping test every 2 minutes and a band test every day at 4:01am.

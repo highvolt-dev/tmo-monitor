@@ -2,14 +2,14 @@ FROM python:alpine
 
 LABEL org.opencontainers.image.source="https://github.com/highvolt-dev/tmo-monitor"
 
-RUN apk add iputils git
+RUN apk add git
 
 RUN adduser -D -h /monitor monitor
 
 COPY docker/entrypoint.sh /
 
 COPY . /tmo-monitor
-RUN cd tmo-monitor && \
-    pip3 install -r requirements.txt
+WORKDIR /tmo-monitor
+RUN pip3 install .
 
 ENTRYPOINT [ "/entrypoint.sh" ]
