@@ -161,6 +161,16 @@ Environment settings are meant to be declarative. They fall into four categories
     - Logging settings
 
 
+## Exit Status
+
+tmo-monitor uses the following exit status codes:
+
+-  `GENERAL_ERROR`: 1
+-  `CONFIGURATION_ERROR`: 2
+-  `API_ERROR`: 3
+-  `REBOOT_PERFORMED`: 4
+
+
 ## Roadmap
 
 (Not yet implemented):
