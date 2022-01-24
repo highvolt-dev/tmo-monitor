@@ -165,6 +165,7 @@ Environment settings are meant to be declarative. They fall into four categories
 
 tmo-monitor uses the following exit status codes:
 
+- Clean execution: 0
 -  `GENERAL_ERROR`: 1
 -  `CONFIGURATION_ERROR`: 2
 -  `API_ERROR`: 3
