@@ -9,9 +9,19 @@ By default, checks for n41 5G signal and connectivity to google.com via ping.
 
 `pip3 install .`
 
-### Mark as executable
+The command will then be available anywhere as `tmo-monitor.py`.
 
-`chmod +x ./tmo-monitor.py`
+#### Windows
+
+1. On Windows, open the folder where you downloaded the project.
+2. Click `File` > `Open Windows PowerShell`
+3. Run the above `pip3 install .` command.
+4. To use, either:
+    - Run `cmd.exe` within PowerShell first
+    - Open `cmd.exe` (Command Prompt) instead of PowerShell
+    - Run `python bin/tmo-monitor.py` in PowerShell from inside the project directory
+
+When in doubt, consult this document or run `tmo-monitor.py --help`.
 
 ## Usage
 
