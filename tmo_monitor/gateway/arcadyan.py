@@ -3,6 +3,7 @@ import sys
 import logging
 import math
 from .base import ControllerBase
+from ..status import ExitStatus
 
 class CubeController(ControllerBase):
   def __init__(self, username, password):
@@ -16,7 +17,7 @@ class CubeController(ControllerBase):
       login_request = requests.post('http://192.168.12.1/TMI/v1/auth/login', json={'username': self.username, 'password': self.password})
     except:
       logging.critical("Could not post login request, exiting.")
-      sys.exit(2)
+      sys.exit(ExitStatus.API_ERROR.value)
     login_request.raise_for_status()
     self.app_token = login_request.json()['auth']['token']
 
@@ -27,7 +28,7 @@ class CubeController(ControllerBase):
       stat_request = requests.get('http://192.168.12.1/TMI/v1/network/telemetry?get=all', headers={'Authorization': 'Bearer ' + self.app_token})
     except:
       logging.critical("Could not query site info, exiting.")
-      sys.exit(2)
+      sys.exit(ExitStatus.API_ERROR.value)
 
     stat_request.raise_for_status()
     meta = stat_request.json()['cell']['4g']
@@ -43,7 +44,7 @@ class CubeController(ControllerBase):
       reboot_request = requests.post('http://192.168.12.1/TMI/v1/gateway/reset?set=reboot', headers={'Authorization': 'Bearer ' + self.app_token})
     except:
       logging.critical("Could not post reboot request, exiting.")
-      sys.exit(2)
+      sys.exit(ExitStatus.API_ERROR.value)
     reboot_request.raise_for_status()
   # functions using authenticated web API endpoints
   def login_web(self):
@@ -56,7 +57,7 @@ class CubeController(ControllerBase):
       signal_request = requests.get('http://192.168.12.1/TMI/v1/gateway?get=all')
     except:
       logging.critical("Could not query signal status, exiting.")
-      sys.exit(2)
+      sys.exit(ExitStatus.API_ERROR.value)
     signal_request.raise_for_status()
     self.info_web = signal_request.json()
     return self.info_web

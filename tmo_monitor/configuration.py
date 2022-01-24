@@ -6,6 +6,7 @@ import sys
 from dotenv import load_dotenv, find_dotenv
 from .utility import print_and_log
 from .gateway.model import GatewayModel
+from .status import ExitStatus
 
 class Configuration:
   def __init__(self):
@@ -28,7 +29,7 @@ class Configuration:
       print_and_log('Incompatible options: --reboot and --skip-reboot', 'ERROR')
       if sys.stdin and sys.stdin.isatty():
         self.parser.print_help(sys.stderr)
-      sys.exit(2)
+      sys.exit(ExitStatus.CONFIGURATION_ERROR.value)
     if self.skip_reboot:
       for var in {'ping', '4G_band', '5G_band', 'enbid'}:
         self.reboot[var] = False

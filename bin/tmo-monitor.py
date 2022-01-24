@@ -8,6 +8,7 @@ from tmo_monitor.configuration import Configuration
 from tmo_monitor.utility import print_and_log
 from tmo_monitor.gateway.arcadyan import CubeController
 from tmo_monitor.gateway.nokia import TrashCanController
+from tmo_monitor.status import ExitStatus
 
 # __main__
 if __name__ == "__main__":
@@ -85,6 +86,7 @@ if __name__ == "__main__":
         reboot_requested = True
 
   # Reboot if needed
+  reboot_performed = False
   if (reboot_requested or log_all):
     connection['uptime'] = gw_control.get_uptime()
   if reboot_requested:
@@ -96,6 +98,7 @@ if __name__ == "__main__":
       if config.reboot_now or (connection['uptime'] >= config.reboot['uptime']):
         print_and_log('Rebooting.')
         gw_control.reboot()
+        reboot_performed = True
       else:
         print_and_log('Uptime threshold not met for reboot.')
   else:
@@ -133,3 +136,6 @@ if __name__ == "__main__":
       msg = "4G: {0} | 5G: {1} | eNB ID: {2} | Avg Ping: {3} ms | Uptime: {4} sec".format(
         connection['4G'], connection['5G'], connection['enbid'], connection['ping'], connection['uptime'])
       print_and_log(msg)
+
+  if reboot_performed:
+    sys.exit(ExitStatus.REBOOT_PERFORMED.value)
