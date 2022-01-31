@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # Start by getting signal metrics
 import logging
+import logging.handlers
 import tailer
 from parse import *
 from tmo_monitor.gateway.model import GatewayModel
 from tmo_monitor.configuration import Configuration
-from tmo_monitor.utility import print_and_log
 from tmo_monitor.gateway.arcadyan import CubeController
 from tmo_monitor.gateway.nokia import TrashCanController
 from tmo_monitor.status import ExitStatus
@@ -16,12 +16,28 @@ if __name__ == "__main__":
   config = Configuration()
   if config.general['print_config']:
     config.print_config()
+  # Set up logging for console
+  root_logger = logging.getLogger()
+  root_logger.setLevel(logging.DEBUG)
+  formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(message)s', '%Y/%m/%d %H:%M:%S')
+  console_logger = logging.StreamHandler()
+  console_logger.setFormatter(formatter)
+  root_logger.addHandler(console_logger)
   if config.general['logfile']:
-    # DEBUG logs go to console, all other logs to this file
-    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y/%m/%d %H:%M:%S',
-      filename=config.general['logfile'], level=logging.INFO)
+    file_logger = logging.FileHandler(config.general['logfile'])
+    file_logger.setLevel(logging.INFO)
+    file_logger.setFormatter(formatter)
+    root_logger.addHandler(file_logger)
+    logging.debug('Enabled file logging to %s' % config.general['logfile'])
+  if config.general['syslog']:
+    syslog_logger = logging.handlers.SysLogHandler()
+    syslog_formatter = logging.Formatter('%(levelname)s : %(message)s')
+    syslog_logger.setFormatter(syslog_formatter)
+    syslog_logger.setLevel(logging.INFO)
+    root_logger.addHandler(syslog_logger)
+    logging.debug('Enabled syslog logging')
   if config.reboot_now:
-    print_and_log('Immediate reboot requested.')
+    logging.info('Immediate reboot requested.')
     reboot_requested = True
   else:
     reboot_requested = False
@@ -45,7 +61,7 @@ if __name__ == "__main__":
       site_meta = gw_control.get_site_info()
       connection['enbid'] = site_meta['eNBID']
       if (site_meta['eNBID'] != config.connection['enbid']) and config.reboot['enbid']:
-        print_and_log('Not on eNB ID ' + str(config.connection['enbid']) + ', on ' + str(site_meta['eNBID']) + '.')
+        logging.info('Not on eNB ID ' + str(config.connection['enbid']) + ', on ' + str(site_meta['eNBID']) + '.')
         reboot_requested = True
       else:
         print('eNB ID check passed, on ' + str(site_meta['eNBID']) + '.')
@@ -59,7 +75,7 @@ if __name__ == "__main__":
         band_4g = signal_info['4G']
         connection['4G'] = band_4g
         if (primary_band and band_4g not in primary_band) and config.reboot['4G_band']:
-          print_and_log('Not on ' + ('one of ' if len(primary_band) > 1 else '') + ', '.join(primary_band) + '.')
+          logging.info('Not on ' + ('one of ' if len(primary_band) > 1 else '') + ', '.join(primary_band) + '.')
           if config.reboot['4G_band']:
             reboot_requested = True
         else:
@@ -70,7 +86,7 @@ if __name__ == "__main__":
       band_5g = signal_info['5G']
       connection['5G'] = band_5g
       if band_5g not in secondary_band and config.reboot['5G_band']:
-        print_and_log('Not on ' + ('one of ' if len(secondary_band) > 1 else '') + ', '.join(secondary_band) + '.')
+        logging.info('Not on ' + ('one of ' if len(secondary_band) > 1 else '') + ', '.join(secondary_band) + '.')
         if config.reboot['5G_band']:
           reboot_requested = True
       else:
@@ -81,7 +97,7 @@ if __name__ == "__main__":
     if log_all:
       connection['ping'] = ping_ms
     if ping_ms < 0:
-      print_and_log('Could not ping ' + config.ping['ping_host'] + '.', 'ERROR')
+      logging.error('Could not ping ' + config.ping['ping_host'] + '.')
       if config.reboot['ping']:
         reboot_requested = True
 
@@ -91,16 +107,16 @@ if __name__ == "__main__":
     connection['uptime'] = gw_control.get_uptime()
   if reboot_requested:
     if config.skip_reboot:
-      print_and_log('Not rebooting.')
+      logging.info('Not rebooting.')
     else:
-      print_and_log('Reboot requested.')
+      logging.info('Reboot requested.')
 
       if config.reboot_now or (connection['uptime'] >= config.reboot['uptime']):
-        print_and_log('Rebooting.')
+        logging.info('Rebooting.')
         gw_control.reboot()
         reboot_performed = True
       else:
-        print_and_log('Uptime threshold not met for reboot.')
+        logging.info('Uptime threshold not met for reboot.')
   else:
     print('No reboot necessary.')
 
@@ -113,29 +129,29 @@ if __name__ == "__main__":
           print(line)
           data = parse("{0} [INFO] 4G: {1} | 5G: {2} | eNB ID: {3} | Avg Ping: {4} ms | Uptime: {5} sec", line)
           if data[1] != connection['4G']:
-            print_and_log("4G connection is {0}, was {1}".format(connection['4G'], data[1]))
+            logging.info("4G connection is {0}, was {1}".format(connection['4G'], data[1]))
             config.general['log_all'] = True
           if data[2] != connection['5G']:
-            print_and_log("5G connection is {0}, was {1}".format(connection['5G'], data[2]))
+            logging.info("5G connection is {0}, was {1}".format(connection['5G'], data[2]))
             config.general['log_all'] = True
           if int(data[3]) != connection['enbid']:
-            print_and_log("eNB ID is {0}, was {1}".format(connection['enbid'], data[3]))
+            logging.info("eNB ID is {0}, was {1}".format(connection['enbid'], data[3]))
             config.general['log_all'] = True
           if int(data[4]) * 3 < connection['ping']:
-            print_and_log("Ping ms {0}, over 3x {1} ms".format(connection['ping'], data[4]))
+            logging.info("Ping ms {0}, over 3x {1} ms".format(connection['ping'], data[4]))
             config.general['log_all'] = True
           if int(data[5]) > connection['uptime']:
-            print_and_log("Uptime {0} sec, less than {1} sec".format(connection['uptime'], data[5]))
+            logging.info("Uptime {0} sec, less than {1} sec".format(connection['uptime'], data[5]))
             config.general['log_all'] = True
           break
 
   if log_all and config.general['log_all']:
-    if config.general['logfile'] == '':
-      logging.error("Logging requested but file not specified")
+    if config.general['logfile'] == '' and not config.general['syslog']:
+      logging.error("Logging requested but file or syslog not specified")
     else:
       msg = "4G: {0} | 5G: {1} | eNB ID: {2} | Avg Ping: {3} ms | Uptime: {4} sec".format(
         connection['4G'], connection['5G'], connection['enbid'], connection['ping'], connection['uptime'])
-      print_and_log(msg)
+      logging.info(msg)
 
   if reboot_performed:
     sys.exit(ExitStatus.REBOOT_PERFORMED.value)

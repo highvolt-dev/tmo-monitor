@@ -4,7 +4,6 @@ import logging
 import os
 import sys
 from dotenv import load_dotenv, find_dotenv
-from .utility import print_and_log
 from .gateway.model import GatewayModel
 from .status import ExitStatus
 
@@ -17,7 +16,7 @@ class Configuration:
     self.ping = dict([('interface', ''), ('ping_host', 'google.com'), ('ping_count', 1), ('ping_interval', 10)])
     self.connection = dict([('primary_band', None), ('secondary_band', ['n41']), ('enbid', None), ('uptime', '')])
     self.reboot = dict([('uptime', 90), ('ping', True), ('4G_band', True), ('5G_band', True), ('enbid', True)])
-    self.general = dict([('print_config', False), ('logfile', ''), ('log_all', False), ('log_delta', False)])
+    self.general = dict([('print_config', False), ('logfile', ''), ('log_all', False), ('log_delta', False), ('syslog', False)])
     self.model = GatewayModel.NOKIA
 
     # Command line arguments override defaults & .env file
@@ -26,7 +25,7 @@ class Configuration:
     self.parse_arguments(args)
 
     if self.skip_reboot and self.reboot_now:
-      print_and_log('Incompatible options: --reboot and --skip-reboot', 'ERROR')
+      logging.error('Incompatible options: --reboot and --skip-reboot')
       if sys.stdin and sys.stdin.isatty():
         self.parser.print_help(sys.stderr)
       sys.exit(ExitStatus.CONFIGURATION_ERROR.value)
@@ -82,7 +81,7 @@ class Configuration:
     tmp = os.environ.get('tmo_logfile')
     if tmp != None:
         self.general['logfile'] = tmp
-    for var in {'print_config', 'log_all', 'log_delta'}:
+    for var in {'print_config', 'log_all', 'log_delta', 'syslog'}:
       tmp = os.environ.get('tmo_' + var)
       if tmp != None:
           if tmp.lower() == 'true':
@@ -120,6 +119,7 @@ class Configuration:
     self.parser.add_argument('--logfile', type=str, default=self.general['logfile'], help='output file for logging')
     self.parser.add_argument('--log-all', action='store_true', default=self.general['log_all'], help='always write connection details to logfile')
     self.parser.add_argument('--log-delta', action='store_true', default=self.general['log_delta'], help='write connection details to logfile on change')
+    self.parser.add_argument('--syslog', action='store_true', default=self.general['syslog'], help='log to syslog')
     self.parser.add_argument('--model', type=str, default=self.model, choices=[model.value for model in GatewayModel], help='the gateway model (defaults to NOK5G21)')
     return self.parser.parse_args()
 
@@ -137,7 +137,7 @@ class Configuration:
       if tmp != None:
         self.connection[var] = tmp
     self.general['logfile'] = args.logfile
-    for var in {'print_config', 'log_all', 'log_delta'}:
+    for var in {'print_config', 'log_all', 'log_delta', 'syslog'}:
       tmp = getattr(args, var)
       self.general[var] = tmp
 
@@ -196,4 +196,5 @@ class Configuration:
     print("    Log file: " + str(self.general['logfile']))
     print("    Log all: " + str(self.general['log_all']))
     print("    Log delta: " + str(self.general['log_delta']))
+    print("    Log to syslog: " + str(self.general['syslog']))
     print('')
