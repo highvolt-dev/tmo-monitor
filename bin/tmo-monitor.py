@@ -2,6 +2,7 @@
 # Start by getting signal metrics
 import logging
 import logging.handlers
+import os
 import tailer
 from parse import *
 from tmo_monitor.gateway.model import GatewayModel
@@ -28,14 +29,19 @@ if __name__ == "__main__":
     file_logger.setLevel(logging.INFO)
     file_logger.setFormatter(formatter)
     root_logger.addHandler(file_logger)
-    logging.debug('Enabled file logging to %s' % config.general['logfile'])
+    logging.debug('Enabled file logging to {}'.format(config.general['logfile']))
   if config.general['syslog']:
-    syslog_logger = logging.handlers.SysLogHandler()
-    syslog_formatter = logging.Formatter('%(levelname)s : %(message)s')
-    syslog_logger.setFormatter(syslog_formatter)
-    syslog_logger.setLevel(logging.INFO)
-    root_logger.addHandler(syslog_logger)
-    logging.debug('Enabled syslog logging')
+    for syslog_socket in ['/dev/log', '/var/run/syslog']:
+      if os.path.exists(syslog_socket):
+        syslog_logger = logging.handlers.SysLogHandler(address = syslog_socket)
+        syslog_formatter = logging.Formatter('%(levelname)s : %(message)s')
+        syslog_logger.setFormatter(syslog_formatter)
+        syslog_logger.setLevel(logging.INFO)
+        pid = os.getpid()
+        syslog_logger.ident = f'tmo-monitor[{pid}]: '
+        root_logger.addHandler(syslog_logger)
+        logging.debug('Enabled syslog logging via {}'.format(syslog_socket))
+        break
   if config.reboot_now:
     logging.info('Immediate reboot requested.')
     reboot_requested = True
