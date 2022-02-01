@@ -33,10 +33,12 @@ if __name__ == "__main__":
     logging.debug('Enabled file logging to {}'.format(config.general['logfile']))
   if config.general['syslog']:
     syslog_handler_opts = {}
+    syslog_logging_details = ''
     if platform.system() != 'Windows':
       for syslog_socket in ['/dev/log', '/var/run/syslog']:
         if os.path.exists(syslog_socket):
           syslog_handler_opts['address'] = syslog_socket
+          syslog_logging_details = 'via {}'.format(syslog_socket)
           break
     syslog_logger = logging.handlers.SysLogHandler(**syslog_handler_opts)
     syslog_formatter = logging.Formatter('[%(levelname)s] %(message)s')
@@ -44,7 +46,7 @@ if __name__ == "__main__":
     syslog_logger.setLevel(logging.INFO)
     syslog_logger.ident = 'tmo-monitor[{}]: '.format(os.getpid())
     root_logger.addHandler(syslog_logger)
-    logging.debug('Enabled syslog logging via {}'.format(syslog_socket))
+    logging.debug('Enabled syslog logging{}'.format(syslog_logging_details))
   if config.reboot_now:
     logging.info('Immediate reboot requested.')
     reboot_requested = True
