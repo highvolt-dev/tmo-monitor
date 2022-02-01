@@ -38,7 +38,7 @@ if __name__ == "__main__":
       for syslog_socket in ['/dev/log', '/var/run/syslog']:
         if os.path.exists(syslog_socket):
           syslog_handler_opts['address'] = syslog_socket
-          syslog_logging_details = 'via {}'.format(syslog_socket)
+          syslog_logging_details = ' via {}'.format(syslog_socket)
           break
     syslog_logger = logging.handlers.SysLogHandler(**syslog_handler_opts)
     syslog_formatter = logging.Formatter('[%(levelname)s] %(message)s')
