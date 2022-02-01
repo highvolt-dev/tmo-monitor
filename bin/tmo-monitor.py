@@ -37,8 +37,7 @@ if __name__ == "__main__":
         syslog_formatter = logging.Formatter('%(levelname)s : %(message)s')
         syslog_logger.setFormatter(syslog_formatter)
         syslog_logger.setLevel(logging.INFO)
-        pid = os.getpid()
-        syslog_logger.ident = f'tmo-monitor[{pid}]: '
+        syslog_logger.ident = 'tmo-monitor[{}]: '.format(os.getpid())
         root_logger.addHandler(syslog_logger)
         logging.debug('Enabled syslog logging via {}'.format(syslog_socket))
         break
