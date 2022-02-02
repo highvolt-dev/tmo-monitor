@@ -18,7 +18,7 @@ class ControllerBase:
     def ping_time(ping_index):
       if ping_index > 0:
         time.sleep(ping_interval)
-      ping_exec = subprocess.run(ping_cmd, capture_output=True)
+      ping_exec = subprocess.run(ping_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       print(ping_exec.stdout.decode('utf-8'))
       if ping_exec.returncode != 0:
         return -1
