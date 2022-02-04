@@ -4,6 +4,7 @@ import logging
 import logging.handlers
 import os
 import platform
+import sys
 import tailer
 from parse import *
 from tmo_monitor.gateway.model import GatewayModel
