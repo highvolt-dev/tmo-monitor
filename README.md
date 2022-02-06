@@ -34,7 +34,7 @@ When in doubt, consult this document or run `tmo-monitor.py --help`.
 ```
 usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST]
                       [--ping-count PING_COUNT]
-                      [--ping-interval PING_INTERVAL] [-R] [-r] [--skip-bands]
+                      [--ping-interval PING_INTERVAL] [-6] [-R] [-r] [--skip-bands]
                       [--skip-5g-bands] [--skip-ping] [--skip-enbid]
                       [--uptime UPTIME]
                       [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}]
@@ -61,6 +61,7 @@ optional arguments:
                         how many ping health checks to perform
   --ping-interval PING_INTERVAL
                         how long in seconds to wait between ping health checks
+  -6, --ping-6          use IPv6 ping
   -R, --reboot          skip health checks and immediately reboot gateway
   -r, --skip-reboot     skip rebooting gateway
   --skip-bands          skip check for connected 4g band
@@ -103,6 +104,9 @@ Valid values are `NOK5G21` for the Nokia gateway, or `ARCKVD21` for the square, 
 
 **Ping Interval:** `--ping-interval`
     Defaults to `10` seconds - override if you'd like to use a different interval.
+
+**Ping v6:** `-6 --ping-6`
+    Use IPv6 ping.
 
 ### Reboot options
 **Reboot:** `-R --reboot`

@@ -105,7 +105,7 @@ if __name__ == "__main__":
         print('Camping on ' + band_5g + '.')
 
     # Check for successful ping
-    ping_ms = gw_control.ping(config.ping['ping_host'], config.ping['ping_count'], config.ping['ping_interval'], config.ping['interface'])
+    ping_ms = gw_control.ping(config.ping['ping_host'], config.ping['ping_count'], config.ping['ping_interval'], config.ping['interface'], config.ping['ping_6'])
     if log_all:
       connection['ping'] = ping_ms
     if ping_ms < 0:

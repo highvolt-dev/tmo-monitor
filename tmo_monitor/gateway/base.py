@@ -2,15 +2,35 @@ import platform
 import re
 import subprocess
 import time
+import sys
 
 class ControllerBase:
   # functions that don't touch the API
-  def ping(self, ping_host, ping_count, ping_interval, interface = None):
+  def ping(self, ping_host, ping_count, ping_interval, interface = None, ping_6 = False):
     is_win = platform.system() == 'Windows'
-    ping_cmd = ['ping']
+    is_osx = platform.system() == 'Darwin'
+
+    ping_cmd = []
+    extra_flags = []
+
+    # Handle IPv6 support - use ping6 binary or ping -6 flag
+    ping_bin = 'ping'
+    if ping_6:
+      if is_osx:
+        ping_bin = 'ping6'
+      else:
+        extra_flags.append('-6')
+
+    # Add optional interface flag
     if interface:
-      ping_cmd.append('-S' if is_win else '-I')
-      ping_cmd.append(interface)
+      extra_flags.append('-S' if is_win else '-I')
+      extra_flags.append(interface)
+
+    # Combine base command with extra flags
+    ping_cmd.append(ping_bin)
+    ping_cmd = ping_cmd + extra_flags
+
+    # Specify ping count
     ping_cmd.append('-n' if is_win else '-c')
     ping_cmd.append('1')
     ping_cmd.append(ping_host)
