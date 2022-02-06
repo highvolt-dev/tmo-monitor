@@ -13,7 +13,7 @@ class Configuration:
     self.reboot_now = False
     self.skip_reboot = False
     self.login = dict([('username', 'admin'), ('password', '')])
-    self.ping = dict([('interface', ''), ('ping_host', 'google.com'), ('ping_count', 1), ('ping_interval', 10)])
+    self.ping = dict([('interface', ''), ('ping_host', 'google.com'), ('ping_count', 1), ('ping_interval', 10), ('ping_6', False)])
     self.connection = dict([('primary_band', None), ('secondary_band', ['n41']), ('enbid', None), ('uptime', '')])
     self.reboot = dict([('uptime', 90), ('ping', True), ('4G_band', True), ('5G_band', True), ('enbid', True)])
     self.general = dict([('print_config', False), ('logfile', ''), ('log_all', False), ('log_delta', False), ('syslog', False)])
@@ -51,6 +51,12 @@ class Configuration:
       tmp = os.environ.get('tmo_' + var)
       if tmp != None:
         self.ping[var] = tmp
+    tmp = os.environ.get('tmo_ping_6')
+    if tmp != None:
+      if tmp.lower() == 'false':
+        self.reboot[var] = False
+      else:
+        self.reboot[var] = True
     for var in {'primary_band', 'secondary_band'}:
       tmp = os.environ.get('tmo_' + var)
       if tmp != None:
@@ -102,6 +108,7 @@ class Configuration:
     self.parser.add_argument('-H', '--ping-host', type=str, default=self.ping['ping_host'], help='the host to ping (defaults to google.com)')
     self.parser.add_argument('--ping-count', type=int, default=self.ping['ping_count'], help='how many ping health checks to perform (defaults to 1)')
     self.parser.add_argument('--ping-interval', type=int, default=self.ping['ping_interval'], help='how long in seconds to wait between ping health checks (defaults to 10)')
+    self.parser.add_argument('-6', '--ping-6', action='store_true', default=self.ping['ping_6'], help='use IPv6 ping')
     # reboot settings
     self.parser.add_argument('-R', '--reboot', action='store_true', help='skip health checks and immediately reboot gateway')
     self.parser.add_argument('-r', '--skip-reboot', action='store_true', help='skip rebooting gateway')
@@ -132,6 +139,8 @@ class Configuration:
       tmp = getattr(args, var)
       if tmp != None:
         self.ping[var] = tmp
+    if args.ping_6 == True:
+      self.ping['ping_6'] = True
     for var in {'primary_band', 'secondary_band', 'enbid'}:
       tmp = getattr(args, var)
       if tmp != None:
@@ -182,6 +191,7 @@ class Configuration:
     (print("    Host: " + self.ping.get('ping_host')) if self.ping.get('ping_host') else '')
     (print("    Count: " + str(self.ping.get('ping_count'))) if self.ping.get('ping_count') else '')
     (print("    Interval: " + str(self.ping.get('ping_interval'))) if self.ping.get('ping_interval') else '')
+    print("    Protocol: " + ('IPv6' if self.ping.get('ping_6') else 'IPv4'))
     print("  Connection configuration:")
     (print("    Primary band: " + str(self.connection.get('primary_band'))) if self.connection.get('primary_band') else '')
     (print("    Secondary band: " + str(self.connection.get('secondary_band'))) if self.connection.get('secondary_band') else '')
