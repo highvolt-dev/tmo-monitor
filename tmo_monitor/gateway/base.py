@@ -1,5 +1,6 @@
 import platform
 import re
+import shutil
 import subprocess
 import time
 import sys
@@ -8,7 +9,6 @@ class ControllerBase:
   # functions that don't touch the API
   def ping(self, ping_host, ping_count, ping_interval, interface = None, ping_6 = False):
     is_win = platform.system() == 'Windows'
-    is_osx = platform.system() == 'Darwin'
 
     ping_cmd = []
     extra_flags = []
@@ -16,7 +16,7 @@ class ControllerBase:
     # Handle IPv6 support - use ping6 binary or ping -6 flag
     ping_bin = 'ping'
     if ping_6:
-      if is_osx:
+      if shutil.which('ping6') is not None:
         ping_bin = 'ping6'
       else:
         extra_flags.append('-6')
