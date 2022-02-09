@@ -54,9 +54,9 @@ class Configuration:
     tmp = os.environ.get('tmo_ping_6')
     if tmp != None:
       if tmp.lower() == 'false':
-        self.reboot[var] = False
+        self.ping['ping_6'] = False
       else:
-        self.reboot[var] = True
+        self.ping['ping_6'] = True
     for var in {'primary_band', 'secondary_band'}:
       tmp = os.environ.get('tmo_' + var)
       if tmp != None:
