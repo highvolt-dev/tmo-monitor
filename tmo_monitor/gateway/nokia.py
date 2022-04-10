@@ -88,7 +88,8 @@ class TrashCanController(ControllerBase):
     login_request.raise_for_status()
     self.web_jar = requests.cookies.RequestsCookieJar()
     self.web_jar.set('sid', login_request.cookies['sid'], domain='192.168.12.1', path='/')
-    self.web_jar.set('lsid', login_request.cookies['lsid'], domain='192.168.12.1', path='/')
+    if 'lsid' in login_request.cookies:
+      self.web_jar.set('lsid', login_request.cookies['lsid'], domain='192.168.12.1', path='/')
     login_response = login_request.json()
     self.csrf_token = login_response['token']
 
