@@ -34,7 +34,7 @@ class CubeController(ControllerBase):
     meta = stat_request.json()['cell']['4g']
 
     return {
-      'eNBID': math.floor(int(meta['ecgi'][6:], 16)/256),
+      'eNBID': math.floor(int(meta['ecgi'][6:])/256),
       'PLMN': meta['mcc'] + '-' + meta['mnc']
     }
   def reboot(self):
