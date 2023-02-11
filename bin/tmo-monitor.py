@@ -61,7 +61,8 @@ if __name__ == "__main__":
 
   if config.model == GatewayModel.NOKIA:
     gw_control = TrashCanController(config.login['username'], config.login['password'])
-  elif config.model == GatewayModel.ARCADYAN:
+  # The Arcadyan and Sagecom gateways appear to conform to the same API
+  elif config.model in [GatewayModel.ARCADYAN, GatewayModel.SAGECOM]:
     gw_control = CubeController(config.login['username'], config.login['password'])
   else:
     raise Exception('Unsupported Gateway Model')
@@ -105,13 +106,21 @@ if __name__ == "__main__":
         print('Camping on ' + band_5g + '.')
 
     # Check for successful ping
-    ping_ms = gw_control.ping(config.ping['ping_host'], config.ping['ping_count'], config.ping['ping_interval'], config.ping['interface'], config.ping['ping_6'])
+    ping_ms = gw_control.ping(config.ping['ping_host'], config.ping['ping_count'], config.ping['ping_interval'], config.connectivity['interface'], config.ping['ping_6'])
     if log_all:
       connection['ping'] = ping_ms
-    if ping_ms < 0:
+    if ping_ms < 0 and config.connectivity['connectivity_check'] == 'ping':
       logging.error('Could not ping ' + config.ping['ping_host'] + '.')
       if config.reboot['ping']:
         reboot_requested = True
+
+    # Check for successful http check
+    if config.connectivity['connectivity_check'] == 'http':
+      status_code = gw_control.http_check(config.http['http_target'])
+      if status_code != config.http['status_code']:
+        logging.error('Status code failed check for ' + config.http['http_target'] + ' - received status code ' + str(status_code))
+        if config.reboot['http']:
+          reboot_requested = True
 
   # Reboot if needed
   reboot_performed = False

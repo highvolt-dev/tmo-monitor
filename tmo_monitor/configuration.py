@@ -13,9 +13,11 @@ class Configuration:
     self.reboot_now = False
     self.skip_reboot = False
     self.login = dict([('username', 'admin'), ('password', '')])
-    self.ping = dict([('interface', ''), ('ping_host', 'google.com'), ('ping_count', 1), ('ping_interval', 10), ('ping_6', False)])
+    self.connectivity = dict([('connectivity_check', 'ping'), ('interface', '')])
+    self.http = dict([('http_target', 'https://google.com/generate_204'), ('status_code', 204)])
+    self.ping = dict([('ping_host', 'google.com'), ('ping_count', 1), ('ping_interval', 10), ('ping_6', False)])
     self.connection = dict([('primary_band', None), ('secondary_band', ['n41']), ('enbid', None), ('uptime', '')])
-    self.reboot = dict([('uptime', 90), ('ping', True), ('4G_band', True), ('5G_band', True), ('enbid', True)])
+    self.reboot = dict([('uptime', 90), ('ping', True), ('http', True), ('4G_band', True), ('5G_band', True), ('enbid', True)])
     self.general = dict([('print_config', False), ('logfile', ''), ('log_all', False), ('log_delta', False), ('syslog', False)])
     self.model = GatewayModel.NOKIA
 
@@ -30,7 +32,7 @@ class Configuration:
         self.parser.print_help(sys.stderr)
       sys.exit(ExitStatus.CONFIGURATION_ERROR.value)
     if self.skip_reboot:
-      for var in {'ping', '4G_band', '5G_band', 'enbid'}:
+      for var in {'ping', 'http', '4G_band', '5G_band', 'enbid'}:
         self.reboot[var] = False
     if not self.login['password']:
       self.login['password'] = getpass.getpass('Password: ')
@@ -47,7 +49,15 @@ class Configuration:
       tmp = os.environ.get('tmo_' + var)
       if tmp != None:
         self.login[var] = tmp
-    for var in {'interface', 'ping_host', 'ping_count', 'ping_interval'}:
+    for var in {'connectivity_check', 'interface'}:
+      tmp = os.environ.get('tmo_' + var)
+      if tmp != None:
+        self.connectivity[var] = tmp
+    for var in {'http_target', 'status_code'}:
+      tmp = os.environ.get('tmo_' + var)
+      if tmp != None:
+        self.http[var] = tmp
+    for var in {'ping_host', 'ping_count', 'ping_interval'}:
       tmp = os.environ.get('tmo_' + var)
       if tmp != None:
         self.ping[var] = tmp
@@ -70,7 +80,7 @@ class Configuration:
       self.reboot['uptime'] = tmp
 
     # Default all reboot options to true, .env file can override to false
-    for var in {'ping', '4G_band', '5G_band', 'enbid'}:
+    for var in {'ping', 'http', '4G_band', '5G_band', 'enbid'}:
       tmp = os.environ.get('tmo_' + var + '_reboot')
       if tmp != None:
         if tmp.lower() == 'false':
@@ -103,8 +113,13 @@ class Configuration:
     # login settings
     self.parser.add_argument('username', type=str, help='the username (most likely "admin")', nargs='?')
     self.parser.add_argument('password', type=str, help='the administrative password (will be requested at runtime if not passed as argument)', nargs='?')
+    # connectivity check
+    self.parser.add_argument('--connectivity-check', type=str, default=self.connectivity['connectivity_check'], choices=['ping', 'http'], help='type of connectivity check to perform (defaults to ping)')
+    self.parser.add_argument('-I', '--interface', type=str, help='the network interface to use for connectivity checks. pass the source IP on Windows or http connectivity checks')
+    # http check
+    self.parser.add_argument('--http-target', type=str, default=self.http['http_target'], help='the URL to perform a http check against (defaults to https://google.com/generate_204)')
+    self.parser.add_argument('--status-code', type=int, default=self.http['status_code'], choices=range(100,600), metavar='{[100,600)}', help='expected HTTP status code for http connectivity check (defaults to 204)')
     # ping configuration
-    self.parser.add_argument('-I', '--interface', type=str, help='the network interface to use for ping. pass the source IP on Windows')
     self.parser.add_argument('-H', '--ping-host', type=str, default=self.ping['ping_host'], help='the host to ping (defaults to google.com)')
     self.parser.add_argument('--ping-count', type=int, default=self.ping['ping_count'], help='how many ping health checks to perform (defaults to 1)')
     self.parser.add_argument('--ping-interval', type=int, default=self.ping['ping_interval'], help='how long in seconds to wait between ping health checks (defaults to 10)')
@@ -114,7 +129,7 @@ class Configuration:
     self.parser.add_argument('-r', '--skip-reboot', action='store_true', help='skip rebooting gateway')
     self.parser.add_argument('--skip-bands', action='store_true', help='skip check for connected 4g band')
     self.parser.add_argument('--skip-5g-bands', action='store_true', help='skip check for connected 5g band')
-    self.parser.add_argument('--skip-ping', action='store_true', help='skip check for successful ping')
+    self.parser.add_argument('--skip-connectivity-check', '--skip-ping', action='store_true', help='skip connectivity check')
     self.parser.add_argument('--skip-enbid', action='store_true', help='skip check for connected eNB ID')
     self.parser.add_argument('--uptime', type=int, default=self.reboot['uptime'], help='how long the gateway must be up before considering a reboot (defaults to 90 seconds)')
     # connection configuration
@@ -135,7 +150,15 @@ class Configuration:
       tmp = getattr(args, var)
       if tmp != None:
         self.login[var] = tmp
-    for var in {'interface', 'ping_host', 'ping_count', 'ping_interval'}:
+    for var in {'connectivity_check', 'interface'}:
+      tmp = getattr(args, var)
+      if tmp != None:
+        self.connectivity[var] = tmp
+    for var in {'http_target', 'status_code'}:
+      tmp = getattr(args, var)
+      if tmp != None:
+        self.http[var] = tmp
+    for var in {'ping_host', 'ping_count', 'ping_interval'}:
       tmp = getattr(args, var)
       if tmp != None:
         self.ping[var] = tmp
@@ -155,9 +178,10 @@ class Configuration:
 
     # At this point in the script self.reboot[*] defaults to True unless overridden in .env file
 
-    # Reboot on ping by default, override for args.skip_ping
-    if args.skip_ping == True:
+    # Reboot on ping and http check by default, override for args.skip_connectivity_check
+    if args.skip_connectivity_check == True:
       self.reboot['ping'] = False
+      self.reboot['http'] = False
 
     # Reboot on primary (4G) band only if one is specified & no overrides
     if self.connection['primary_band'] == None or args.skip_bands == True:
@@ -186,8 +210,13 @@ class Configuration:
       print("  Login info:")
       print("    Username: " + self.login.get('username') if self.login.get('username') else '')
       print("    Password: " + self.login.get('password') if self.login.get('password') else '')
+    print("  Connectivity check:")
+    print("    Mode: " + self.connectivity.get('connectivity_check'))
+    (print("    Interface: " + self.connectivity.get('interface')) if self.connectivity.get('interface') else '')
+    print("  Http check:")
+    (print("    Target: " + self.http.get('http_target')) if self.http.get('http_target') else '')
+    (print("    Status Code: " + str(self.http.get('status_code'))) if self.http.get('status_code') else '')
     print("  Ping configuration:")
-    (print("    Interface: " + self.ping.get('interface')) if self.ping.get('interface') else '')
     (print("    Host: " + self.ping.get('ping_host')) if self.ping.get('ping_host') else '')
     (print("    Count: " + str(self.ping.get('ping_count'))) if self.ping.get('ping_count') else '')
     (print("    Interval: " + str(self.ping.get('ping_interval'))) if self.ping.get('ping_interval') else '')
