@@ -1,4 +1,5 @@
 import platform
+import requests
 import re
 import shutil
 import subprocess
@@ -55,3 +56,7 @@ class ControllerBase:
       if result > 0:
         return result
     return -1
+
+  def http_check(self, target, interface = None):
+    r = requests.get(target)
+    return r.status_code
