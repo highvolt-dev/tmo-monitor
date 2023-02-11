@@ -10,6 +10,7 @@ class ControllerBase:
   # functions that don't touch the API
   def ping(self, ping_host, ping_count, ping_interval, interface = None, ping_6 = False):
     is_win = platform.system() == 'Windows'
+    is_mac = platform.system() == 'Darwin'
 
     ping_cmd = []
     extra_flags = []
@@ -21,6 +22,9 @@ class ControllerBase:
         ping_bin = 'ping6'
       else:
         extra_flags.append('-6')
+    # Explicitly use -4 flag for IPv4 except for Mac OS X
+    elif not is_mac:
+      extra_flags.append('-4')
 
     # Add optional interface flag
     if interface:
