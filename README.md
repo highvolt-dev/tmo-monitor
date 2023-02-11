@@ -102,7 +102,7 @@ Valid values are `NOK5G21` for the Nokia gateway, `ARCKVD21` for the square, bla
 
 ### Connectivity check
 **Mode:** `--connectivity-check`
-    Defaults to `ping`. Can instead use a HTTP(S) based health check with the `http` value. The `http` health check defaults to checking `https://google.com/generate_204` and checking its status code. _All connectivity checks will respect the `-I --interface` flag_.
+    Defaults to `ping`. Can instead use a HTTP(S) based health check with the `http` value. The `http` health check defaults to checking `https://google.com/generate_204` and checking its status code.
 
 **Interface:** `-I --interface`
     Can be used to specify the network interface used by the ping command. Useful if T-Mobile Home Internet is not your default network interface: e.g., this is running on a dual WAN router. On Windows, pass the source IP address to use. `http` connectivity checks will be dictated by system routing rules.
